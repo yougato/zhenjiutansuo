@@ -1,0 +1,2871 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>经络循行图 · 无限画布 · 圆环图</title>
+<style>
+:root{
+  --bg:#070b14; --panel:rgba(12,17,30,.88); --line:rgba(126,200,255,.14);
+  --accent:#7ec8ff; --gold:#ffd166; --txt:#dfe9f5; --sub:#8fa3bd;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);
+  font-family:-apple-system,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;color:var(--txt)}
+#cv{position:fixed;inset:0;touch-action:none;cursor:grab}
+#cv.drag{cursor:grabbing}#cv.pt{cursor:pointer}
+#vig{position:fixed;inset:0;pointer-events:none;
+  background:radial-gradient(ellipse at 50% 45%,transparent 55%,rgba(2,4,10,.55) 100%)}
+#topbar{position:fixed;top:0;left:0;right:0;height:54px;display:flex;align-items:center;gap:14px;
+  padding:0 16px;background:linear-gradient(180deg,rgba(7,11,20,.92),rgba(7,11,20,.55) 80%,transparent);
+  z-index:30;pointer-events:none}
+#topbar>*{pointer-events:auto}
+.brand{display:flex;align-items:center;gap:11px}
+.logo{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;
+  font-family:"Songti SC","STSong","SimSun",serif;font-size:19px;color:#0a1220;
+  background:linear-gradient(135deg,var(--gold),#ffb14e);box-shadow:0 0 14px rgba(255,209,102,.35)}
+.brand h1{font-size:15.5px;font-weight:600;letter-spacing:.5px}
+.brand p{font-size:10.5px;color:var(--sub);letter-spacing:2px;margin-top:1px}
+#vsw{display:flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;
+  background:rgba(10,16,28,.7);backdrop-filter:blur(6px)}
+#vsw button{border:none;background:none;color:var(--sub);font-size:12px;padding:6px 13px;cursor:pointer;letter-spacing:1px}
+#vsw button+button{border-left:1px solid var(--line)}
+#vsw button:hover{color:#fff}
+#vsw button.on{background:rgba(126,200,255,.16);color:#fff}
+#btnAI{height:30px;padding:0 13px;border-radius:16px;border:1px solid rgba(255,209,102,.45);
+  background:rgba(255,209,102,.1);color:var(--gold);font-size:12px;cursor:pointer;letter-spacing:.5px;flex:none}
+#btnAI:hover{background:rgba(255,209,102,.22)}
+#btnAI.on{background:rgba(255,209,102,.32);color:#fff}
+#stats{margin-left:auto;display:flex;gap:8px;align-items:center}
+.badge{font-size:11px;color:var(--accent);border:1px solid var(--line);
+  background:rgba(10,16,28,.7);padding:4px 10px;border-radius:20px;backdrop-filter:blur(6px)}
+.badge b{color:var(--gold);font-weight:600}
+#btnHelp{width:30px;height:30px;border-radius:50%;border:1px solid var(--line);color:var(--sub);
+  background:rgba(10,16,28,.7);cursor:pointer;font-size:14px}
+#btnHelp:hover{color:#fff;border-color:var(--accent)}
+#btnMenu{display:none;width:34px;height:34px;border-radius:8px;border:1px solid var(--line);
+  background:rgba(10,16,28,.7);color:var(--txt);cursor:pointer;font-size:15px}
+#panel{position:fixed;top:54px;left:0;bottom:64px;width:288px;z-index:25;
+  background:var(--panel);backdrop-filter:blur(14px);border-right:1px solid var(--line);
+  display:flex;flex-direction:column;transition:transform .3s}
+#panel.hide{transform:translateX(-100%)}
+#panel .pbody{flex:1;overflow-y:auto;padding:12px 14px 20px}
+#panel .pbody::-webkit-scrollbar{width:5px}
+#panel .pbody::-webkit-scrollbar-thumb{background:rgba(126,200,255,.2);border-radius:3px}
+.sec h3{font-size:11px;color:var(--sub);letter-spacing:3px;margin:14px 2px 8px;font-weight:600}
+.sec h3:first-child{margin-top:2px}
+.search{position:relative}
+.search input,.dzq{width:100%;padding:9px 12px;border-radius:9px;border:1px solid var(--line);
+  background:rgba(8,13,24,.8);color:var(--txt);font-size:13px;outline:none}
+.search input:focus,.dzq:focus{border-color:var(--accent)}
+.sug{position:absolute;top:calc(100% + 6px);left:0;right:0;z-index:40;border-radius:10px;overflow:hidden;
+  background:rgba(13,19,33,.97);border:1px solid var(--line);box-shadow:0 10px 30px rgba(0,0,0,.5);display:none}
+.sug.show{display:block}
+.sug .it{padding:8px 12px;cursor:pointer;display:flex;align-items:center;gap:8px;font-size:13px}
+.sug .it:hover{background:rgba(126,200,255,.1)}
+.sug .it .m{font-size:10.5px;color:var(--sub);margin-left:auto}
+.sug .none{padding:10px 12px;font-size:12px;color:var(--sub)}
+.mrow{display:flex;align-items:center;gap:9px;padding:7px 8px;border-radius:8px;cursor:pointer;user-select:none}
+.mrow:hover{background:rgba(126,200,255,.07)}
+.mrow.sel{background:rgba(126,200,255,.13)}
+.mrow .dot{width:9px;height:9px;border-radius:50%;flex:none;box-shadow:0 0 6px currentColor}
+.mrow .nm{font-size:12.8px}
+.mrow .sub{font-size:10px;color:var(--sub);margin-left:auto;white-space:nowrap}
+.mrow .eye{flex:none;width:22px;height:22px;border:none;background:none;color:var(--sub);cursor:pointer;
+  font-size:12px;border-radius:5px;opacity:.65}
+.mrow .eye:hover{opacity:1;background:rgba(255,255,255,.08)}
+.mrow.off .nm,.mrow.off .sub,.mrow.off .dot{opacity:.32}
+.opt{display:flex;align-items:center;gap:9px;padding:6px 4px;font-size:12.5px;cursor:pointer;user-select:none}
+.opt .sw{width:32px;height:18px;border-radius:10px;background:rgba(255,255,255,.12);position:relative;transition:.2s;flex:none}
+.opt .sw::after{content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;
+  background:#cfe2ff;transition:.2s}
+.opt.on .sw{background:rgba(126,200,255,.5)}
+.opt.on .sw::after{left:16px;background:#fff}
+.tripill{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;flex:none}
+.tripill i{font-style:normal;padding:1px 8px;font-size:10px;color:var(--sub);cursor:pointer;transition:.15s}
+.tripill i+i{border-left:1px solid var(--line)}
+.tripill i.on{background:rgba(126,200,255,.22);color:#fff}
+#dcats{display:flex;flex-wrap:wrap;gap:5px;margin:8px 0}
+.cchip{font-size:10.5px;padding:3px 10px;border-radius:12px;border:1px solid var(--line);
+  color:var(--sub);cursor:pointer;user-select:none;transition:.15s}
+.cchip:hover{color:#fff}
+.cchip.on{background:rgba(126,200,255,.16);color:#fff;border-color:rgba(126,200,255,.45)}
+.dz{border:1px solid var(--line);border-radius:9px;margin-bottom:6px;overflow:hidden;transition:.2s}
+.dz.open{border-color:rgba(126,200,255,.35)}
+.dzh{display:flex;align-items:center;gap:8px;padding:8px 10px;cursor:pointer;background:rgba(255,255,255,.02)}
+.dzh:hover{background:rgba(126,200,255,.06)}
+.dzh b{font-size:12.6px;font-weight:600}
+.dzh .ct{font-size:9.5px;color:var(--sub);border:1px solid var(--line);padding:1px 7px;border-radius:8px}
+.dzh .ar{margin-left:auto;color:var(--sub);font-size:10px}
+.dzb{padding:9px 10px 5px;border-top:1px solid var(--line);background:rgba(8,13,24,.55)}
+.pchip{display:inline-block;font-size:11px;padding:3px 9px;border-radius:8px;margin:0 5px 6px 0;
+  background:rgba(126,200,255,.12);color:var(--accent);cursor:pointer;transition:.15s}
+.pchip:hover{background:rgba(126,200,255,.3)}
+.dload{display:block;width:100%;margin:2px 0 4px;padding:6px;border-radius:8px;
+  border:1px solid rgba(255,209,102,.45);background:rgba(255,209,102,.1);color:var(--gold);
+  font-size:11.5px;cursor:pointer}
+.dload:hover{background:rgba(255,209,102,.22)}
+.dzn{padding:6px 10px 9px;font-size:10.5px;color:var(--sub);border-top:1px dashed var(--line);line-height:1.6}
+#flowbar{position:fixed;bottom:12px;left:50%;transform:translateX(-50%);z-index:26;
+  display:flex;align-items:center;gap:12px;padding:8px 14px;border-radius:40px;
+  background:var(--panel);border:1px solid var(--line);backdrop-filter:blur(14px);
+  box-shadow:0 8px 30px rgba(0,0,0,.4)}
+#btnPlay{width:34px;height:34px;border-radius:50%;border:1px solid rgba(255,209,102,.5);flex:none;
+  background:rgba(255,209,102,.12);color:var(--gold);font-size:13px;cursor:pointer}
+#btnPlay:hover{background:rgba(255,209,102,.25)}
+#dots{display:flex;gap:7px}
+.fdot{width:12px;height:12px;border-radius:50%;border:2px solid transparent;cursor:pointer;padding:0;
+  background-clip:padding-box;transition:.2s;opacity:.85}
+.fdot:hover{transform:scale(1.35);opacity:1}
+.fdot.cur{box-shadow:0 0 8px 2px rgba(255,255,255,.35);transform:scale(1.4)}
+#flowtxt{font-size:12px;min-width:190px}
+#flowtxt b{color:var(--gold);font-weight:600}
+#flowtxt span{color:var(--sub);font-size:11px;display:block;margin-top:1px}
+#zoomctl{position:fixed;right:14px;bottom:14px;z-index:26;display:flex;flex-direction:column;gap:6px}
+#zoomctl button{width:34px;height:34px;border-radius:9px;border:1px solid var(--line);cursor:pointer;
+  background:var(--panel);color:var(--txt);font-size:15px;backdrop-filter:blur(10px)}
+#zoomctl button:hover{border-color:var(--accent);color:var(--accent)}
+#zoomctl button.txt{font-size:9.5px;font-weight:700;letter-spacing:.5px}
+#zoomctl button.txt:hover{border-color:var(--gold);color:var(--gold)}
+#zoomval{position:fixed;right:58px;bottom:22px;z-index:26;font-size:11px;color:var(--sub)}
+#wuxleg{position:fixed;right:58px;bottom:64px;z-index:24;display:none;align-items:center;gap:10px;
+  padding:7px 12px;border-radius:10px;background:var(--panel);border:1px solid var(--line);
+  backdrop-filter:blur(10px);font-size:11px;color:var(--sub)}
+#wuxleg.show{display:flex}
+#wuxleg .t{color:var(--gold);font-weight:600;letter-spacing:1px}
+#wuxleg .it{display:flex;align-items:center;gap:4px;color:#c4d4ea}
+#wuxleg i{width:9px;height:9px;border-radius:50%;display:inline-block;box-shadow:0 0 5px currentColor}
+#tip{position:fixed;z-index:50;pointer-events:none;display:none;max-width:250px;
+  background:rgba(10,15,26,.95);border:1px solid var(--line);border-radius:10px;padding:9px 12px;
+  box-shadow:0 10px 30px rgba(0,0,0,.5);backdrop-filter:blur(8px)}
+#tip .tn{font-size:15px;font-weight:600;display:flex;align-items:baseline;gap:8px}
+#tip .tn .m{font-size:10.5px;font-weight:400}
+#tip .tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+#tip .tag{font-size:10px;padding:2px 7px;border-radius:8px;background:rgba(126,200,255,.13);color:var(--accent)}
+#tip .note{font-size:11.5px;color:#c4d4ea;margin-top:6px;line-height:1.55}
+#detail{position:fixed;top:66px;right:14px;width:264px;z-index:27;border-radius:14px;
+  background:var(--panel);border:1px solid var(--line);backdrop-filter:blur(14px);
+  padding:16px;transform:translateX(120%);transition:transform .35s cubic-bezier(.2,.8,.25,1);
+  box-shadow:0 14px 40px rgba(0,0,0,.5);max-height:calc(100vh - 96px);overflow-y:auto}
+#detail.show{transform:none}
+#detail::-webkit-scrollbar{width:4px}
+#detail::-webkit-scrollbar-thumb{background:rgba(126,200,255,.25);border-radius:2px}
+#detail .bar{height:4px;border-radius:2px;width:56px;margin-bottom:10px}
+#detail h2{font-size:21px;font-weight:600;letter-spacing:1px}
+#detail .m{font-size:12px;color:var(--sub);margin-top:3px}
+#detail .tags{display:flex;flex-wrap:wrap;gap:5px;margin:10px 0}
+#detail .tag{font-size:11px;padding:3px 9px;border-radius:9px;background:rgba(126,200,255,.13);color:var(--accent)}
+#detail .note{font-size:12.5px;color:#c4d4ea;line-height:1.7}
+#detail .loc{margin-top:10px;font-size:11.5px;color:#9fb6d4;line-height:1.65;
+  border-left:2px solid rgba(126,200,255,.35);padding-left:9px}
+#detail .loc b{color:var(--accent);font-weight:600}
+#detail .rxs{margin-top:12px}
+#detail .rxs .h{font-size:11px;color:var(--gold);letter-spacing:2px;margin-bottom:7px;font-weight:600}
+.rxit{display:flex;align-items:center;gap:7px;padding:6px 9px;border-radius:8px;
+  background:rgba(255,209,102,.07);border:1px solid rgba(255,209,102,.18);cursor:pointer;margin-bottom:5px}
+.rxit:hover{background:rgba(255,209,102,.16)}
+.rxit b{color:#ffd166;font-size:13px;flex:none}
+.rxit .lb{font-size:10px;color:var(--sub);flex:none}
+.rxit .ef{font-size:10.5px;color:#c4d4ea;margin-left:auto;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.zrow{display:flex;align-items:center;gap:5px;margin:7px 0;flex-wrap:wrap}
+.zl{font-size:10.5px;color:var(--sub);flex:none;letter-spacing:1px}
+.zel{font-size:10px;padding:1.5px 7px;border-radius:7px;font-weight:600;flex:none}
+.zarrow{color:#5b6d85;font-size:10px;flex:none}
+.zpt{font-size:11.5px;padding:3px 9px;border-radius:8px;border:1px solid rgba(126,200,255,.3);
+  background:rgba(126,200,255,.08);color:#bcd8f7;cursor:pointer;transition:.15s}
+.zpt:hover{background:rgba(126,200,255,.2)}
+.zpt i{font-style:normal;font-size:9.5px;color:var(--sub);margin-left:5px}
+.zadd{font-size:10.5px;padding:3px 9px;border-radius:8px;border:1px solid rgba(255,209,102,.45);
+  background:rgba(255,209,102,.1);color:var(--gold);cursor:pointer;flex:none}
+.zadd:hover{background:rgba(255,209,102,.25)}
+.znote{font-size:10px;color:var(--sub);margin-top:6px;line-height:1.6;border-top:1px dashed var(--line);padding-top:6px}
+#detail .pos{margin-top:10px;font-size:11px;color:var(--sub)}
+#dClose{position:absolute;top:10px;right:12px;border:none;background:none;color:var(--sub);cursor:pointer;font-size:16px}
+#dClose:hover{color:#fff}
+#rxbar{position:fixed;left:14px;bottom:14px;z-index:26;width:288px;border-radius:12px;
+  background:var(--panel);border:1px solid rgba(255,209,102,.3);backdrop-filter:blur(14px);
+  display:none;flex-direction:column;max-height:230px;box-shadow:0 8px 30px rgba(0,0,0,.4)}
+#rxbar.show{display:flex}
+#rxbar .rxh{display:flex;align-items:center;gap:8px;padding:9px 12px;font-size:12.5px;color:var(--gold);
+  border-bottom:1px solid rgba(255,209,102,.15)}
+#rxbar .rxh b{letter-spacing:1px}
+#rxCnt{font-size:10.5px;color:var(--sub)}
+#rxClear{margin-left:auto;border:none;background:rgba(255,209,102,.12);color:var(--gold);
+  font-size:10.5px;padding:3px 9px;border-radius:10px;cursor:pointer}
+#rxList{overflow-y:auto;padding:8px 10px}
+#rxList::-webkit-scrollbar{width:4px}
+#rxList::-webkit-scrollbar-thumb{background:rgba(255,209,102,.25);border-radius:2px}
+.rxrow{display:flex;align-items:center;gap:6px;font-size:12px;padding:5px 7px;border-radius:7px;
+  background:rgba(255,209,102,.06);margin-bottom:4px}
+.rxrow .nm{color:#ffe4a3}
+.rxrow .lb{font-size:10px;color:var(--sub);margin-left:auto;white-space:nowrap}
+.rxrow button{border:none;background:none;color:var(--sub);cursor:pointer;font-size:11px;flex:none}
+.rxrow button:hover{color:#ff8a8a}
+.rxempty{font-size:11px;color:var(--sub);text-align:center;padding:10px 6px;line-height:1.7}
+#aiWin{position:fixed;top:60px;right:58px;bottom:64px;width:330px;z-index:28;
+  display:none;flex-direction:column;border-radius:14px;background:var(--panel);
+  border:1px solid rgba(255,209,102,.28);backdrop-filter:blur(14px);
+  box-shadow:0 14px 44px rgba(0,0,0,.55)}
+#aiWin.show{display:flex}
+.aih{display:flex;align-items:center;gap:9px;padding:10px 12px;color:var(--gold);
+  font-size:13px;font-weight:600;border-bottom:1px solid rgba(255,209,102,.2);letter-spacing:.5px}
+.aih .dotp{width:8px;height:8px;border-radius:50%;background:#54d99a;box-shadow:0 0 7px #54d99a;
+  animation:aiBl 2.2s infinite;flex:none}
+@keyframes aiBl{0%,100%{opacity:1}50%{opacity:.3}}
+.aih button{margin-left:auto;border:none;background:none;color:var(--sub);cursor:pointer;
+  font-size:13px;padding:2px 6px;border-radius:6px}
+.aih button:hover{color:#fff;background:rgba(255,255,255,.1)}
+#aiMsgs{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:10px}
+#aiMsgs::-webkit-scrollbar{width:4px}
+#aiMsgs::-webkit-scrollbar-thumb{background:rgba(126,200,255,.25);border-radius:2px}
+.am{max-width:88%;padding:8px 11px;border-radius:12px;font-size:12.5px;line-height:1.7;word-break:break-word}
+.am.user{align-self:flex-end;background:rgba(126,200,255,.16);border:1px solid rgba(126,200,255,.32)}
+.am.bot{align-self:flex-start;background:rgba(255,255,255,.05);border:1px solid var(--line)}
+.am.bot b{color:var(--gold)}
+.tdot{display:inline-block;font-size:9px;color:var(--sub);animation:aiBl 1s infinite;margin:0 2px}
+.ptbox{margin:7px 0;padding:8px 10px;border-radius:9px;background:rgba(126,200,255,.07);border:1px solid var(--line)}
+.ptl{display:flex;flex-wrap:wrap;gap:5px;margin:4px 0 6px}
+.achip{display:inline-block;font-size:11.5px;padding:3px 10px;border-radius:8px;
+  background:rgba(126,200,255,.15);color:var(--accent);cursor:pointer;transition:.15s}
+.achip:hover{background:rgba(126,200,255,.35)}
+.ptn{font-size:11px;color:var(--sub);margin-top:5px;line-height:1.65}
+.ptn b{color:#c4d4ea}
+.abtns{margin-top:8px;display:flex;gap:6px;flex-wrap:wrap}
+.abtn{font-size:11px;padding:5px 11px;border-radius:8px;border:1px solid rgba(255,209,102,.45);
+  background:rgba(255,209,102,.12);color:var(--gold);cursor:pointer}
+.abtn:hover{background:rgba(255,209,102,.28)}
+#aiChips{display:flex;flex-wrap:wrap;gap:5px;padding:7px 12px;border-top:1px solid var(--line)}
+#aiChips:empty{display:none}
+#aiChips .achip{font-size:11px}
+.aiin{display:flex;gap:7px;padding:10px 12px;border-top:1px solid var(--line)}
+.aiin input{flex:1;padding:8px 11px;border-radius:9px;border:1px solid var(--line);
+  background:rgba(8,13,24,.8);color:var(--txt);font-size:12.5px;outline:none;min-width:0}
+.aiin input:focus{border-color:var(--accent)}
+.aiin button{padding:0 15px;border-radius:9px;border:1px solid rgba(255,209,102,.5);
+  background:rgba(255,209,102,.14);color:var(--gold);cursor:pointer;font-size:12.5px;flex:none}
+.aidis{padding:6px 12px 9px;font-size:10px;color:var(--sub);border-top:1px dashed var(--line);line-height:1.5}
+#hint{position:fixed;bottom:64px;left:50%;transform:translateX(-50%);z-index:20;font-size:11.5px;
+  color:var(--sub);background:rgba(8,12,22,.75);border:1px solid var(--line);border-radius:20px;
+  padding:6px 16px;pointer-events:none;transition:opacity 1s;white-space:nowrap}
+#hint.fade{opacity:0}
+#toast{position:fixed;left:50%;bottom:70px;transform:translateX(-50%) translateY(8px);z-index:70;
+  padding:9px 18px;border-radius:24px;background:rgba(13,20,34,.95);border:1px solid rgba(255,209,102,.4);
+  color:var(--gold);font-size:12.5px;opacity:0;pointer-events:none;transition:.3s;backdrop-filter:blur(8px)}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+#help{position:fixed;inset:0;z-index:60;display:none;place-items:center;background:rgba(3,5,11,.7);backdrop-filter:blur(4px)}
+#help.show{display:grid}
+#help .card{width:min(520px,92vw);max-height:84vh;overflow-y:auto;border-radius:16px;background:#0d1424;
+  border:1px solid var(--line);padding:26px 28px}
+#help h2{font-size:17px;color:var(--gold);margin-bottom:14px;letter-spacing:1px}
+#help h4{font-size:12px;color:var(--accent);margin:14px 0 6px;letter-spacing:2px}
+#help p,#help li{font-size:12.5px;color:#c4d4ea;line-height:1.8}
+#help ul{padding-left:18px}
+#help .lg{display:flex;align-items:center;gap:8px;font-size:12.5px;margin:4px 0}
+#help .lg i{width:10px;height:10px;border-radius:50%;flex:none}
+#hClose{margin-top:18px;width:100%;padding:9px;border-radius:9px;border:1px solid rgba(255,209,102,.4);
+  background:rgba(255,209,102,.1);color:var(--gold);cursor:pointer;font-size:13px}
+@media (max-width:760px){
+  #btnMenu{display:block}
+  #panel{width:min(288px,84vw)}
+  #stats{display:none}
+  #flowtxt{display:none}
+  #vsw button{font-size:11px;padding:5px 9px}
+  #btnAI{padding:0 8px;font-size:11px}
+  #detail{width:min(264px,80vw)}
+  #hint,#wuxleg{display:none!important}
+  #rxbar{width:210px;max-height:150px;bottom:70px}
+  #aiWin{right:8px;left:8px;width:auto;bottom:70px}
+}
+/* ============================================================
+   v9 新增：左栏折叠 / 视觉精修 / 大模型接口面板 / 回答渲染
+   ============================================================ */
+:root{--panelw:288px}
+
+/* ── 左栏折叠 ── */
+#panel{width:var(--panelw);box-shadow:18px 0 46px rgba(0,0,0,.34)}
+#btnMenu{display:grid;place-items:center;width:34px;height:34px;border-radius:9px;flex:none;
+  border:1px solid var(--line);background:rgba(10,16,28,.7);color:var(--txt);cursor:pointer;
+  font-size:13px;line-height:1;transition:border-color .18s,color .18s,background .18s}
+#btnMenu:hover{border-color:var(--accent);color:var(--accent);background:rgba(126,200,255,.1)}
+#panelHandle{position:fixed;z-index:27;left:var(--panelw);
+  top:calc(54px + (100vh - 122px)/2);transform:translateY(-50%);
+  width:15px;height:64px;padding:0;display:grid;place-items:center;
+  border:1px solid var(--line);border-left:none;border-radius:0 10px 10px 0;
+  background:var(--panel);backdrop-filter:blur(10px);color:var(--sub);cursor:pointer;font-size:9px;
+  transition:left .3s cubic-bezier(.2,.8,.25,1),color .2s,background .2s}
+#panelHandle:hover{color:var(--accent);background:rgba(126,200,255,.14)}
+body.pcol #panelHandle{left:0}
+#rxbar{left:calc(var(--panelw) + 14px);transition:left .3s cubic-bezier(.2,.8,.25,1)}
+body.pcol #rxbar{left:14px}
+
+/* ── 面板与列表精修 ── */
+.sec h3{display:flex;align-items:center;gap:7px;margin:16px 0 8px;padding-left:1px;
+  font-size:10.5px;letter-spacing:2.5px}
+.sec h3::before{content:"";width:3px;height:11px;border-radius:2px;flex:none;
+  background:linear-gradient(180deg,var(--accent),rgba(126,200,255,.22))}
+.mrow{transition:background .18s}
+.mrow.sel{background:linear-gradient(90deg,rgba(126,200,255,.2),rgba(126,200,255,.05));
+  box-shadow:inset 2px 0 0 var(--accent)}
+.dz:hover{border-color:rgba(126,200,255,.28)}
+.cchip:active,.pchip:active,.achip:active{transform:translateY(1px)}
+#panel .pbody{padding:12px 14px 22px}
+#zoomctl button:active,#vsw button:active,#btnAI:active,.cbtn:active,.abtn:active{transform:translateY(1px)}
+#btnAI.act{animation:pulseAI 2.6s infinite}
+@keyframes pulseAI{0%,100%{box-shadow:0 0 0 0 rgba(255,209,102,.3)}50%{box-shadow:0 0 0 6px rgba(255,209,102,0)}}
+
+/* ── AI 头部 · 设置面板 ── */
+.aih .st{margin-left:auto;font-size:10px;font-weight:400;letter-spacing:0;color:var(--sub);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:136px}
+.aih button{margin-left:0;flex:none}
+.aih.off .dotp{background:#8fa3bd;box-shadow:0 0 7px rgba(143,163,189,.5);animation:none}
+#aiWarn{display:none;margin:0 12px 9px;padding:7px 10px;border-radius:9px;font-size:10.5px;line-height:1.65;
+  border:1px solid rgba(255,209,102,.35);background:rgba(255,209,102,.08);color:#ffdf9e}
+#aiWarn.show{display:block}
+#aiWarn b{color:#ffd166}
+#aiCfg{position:absolute;inset:0;z-index:6;display:none;flex-direction:column;border-radius:14px;
+  background:rgba(9,13,24,.985)}
+#aiCfg.show{display:flex}
+.cfgh{display:flex;align-items:center;gap:8px;padding:12px 13px;font-size:13px;font-weight:600;
+  color:var(--gold);letter-spacing:.5px;border-bottom:1px solid var(--line)}
+.cfgh button{margin-left:auto;border:none;background:none;color:var(--sub);cursor:pointer;
+  font-size:13px;padding:2px 6px;border-radius:6px}
+.cfgh button:hover{color:#fff;background:rgba(255,255,255,.1)}
+.cfgb{flex:1;overflow-y:auto;padding:2px 13px 18px}
+.cfgb::-webkit-scrollbar{width:4px}
+.cfgb::-webkit-scrollbar-thumb{background:rgba(126,200,255,.25);border-radius:2px}
+.cfgl{font-size:10.5px;color:var(--sub);letter-spacing:2px;margin:15px 0 7px;font-weight:600}
+.provs{display:flex;gap:6px}
+.prov{flex:1;min-width:0;padding:8px 6px;border-radius:10px;border:1px solid var(--line);text-align:center;
+  background:rgba(255,255,255,.03);cursor:pointer;transition:.18s}
+.prov:hover{border-color:rgba(126,200,255,.4)}
+.prov.on{border-color:rgba(126,200,255,.6);background:rgba(126,200,255,.15)}
+.prov b{display:block;font-size:12px;font-weight:600;color:var(--txt)}
+.prov span{display:block;margin-top:2px;font-size:9px;color:var(--sub);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.keyrow{display:flex;gap:6px}
+.keyrow input{flex:1;min-width:0;padding:8px 10px;border-radius:9px;border:1px solid var(--line);
+  background:rgba(8,13,24,.85);color:var(--txt);font-size:12px;outline:none;
+  font-family:ui-monospace,Consolas,"Courier New",monospace}
+.keyrow input:focus{border-color:var(--accent)}
+.keyrow button{width:34px;border-radius:9px;border:1px solid var(--line);cursor:pointer;
+  background:rgba(255,255,255,.05);color:var(--sub)}
+.keyrow button:hover{color:var(--accent);border-color:var(--accent)}
+.crow{margin:6px 0}
+.crow input,.crow select{width:100%;padding:8px 10px;border-radius:9px;border:1px solid var(--line);
+  background:rgba(8,13,24,.85);color:var(--txt);font-size:12.5px;outline:none}
+.crow select{cursor:pointer}
+.crow input:focus,.crow select:focus{border-color:var(--accent)}
+.cnote{font-size:10.5px;color:var(--sub);line-height:1.75;margin-top:7px}
+.cnote b{color:#c4d4ea}
+.cnote a{color:var(--accent);text-decoration:none;border-bottom:1px dotted rgba(126,200,255,.5)}
+.cbtns{display:flex;gap:7px;margin-top:15px}
+.cbtn{flex:1;padding:9px;border-radius:9px;border:1px solid rgba(255,209,102,.45);cursor:pointer;
+  background:rgba(255,209,102,.12);color:var(--gold);font-size:12.5px;transition:.18s}
+.cbtn:hover{background:rgba(255,209,102,.26)}
+.cbtn.ghost{border-color:var(--line);background:rgba(255,255,255,.04);color:var(--txt)}
+.cbtn.ghost:hover{background:rgba(255,255,255,.1)}
+.cstat{display:none;margin-top:10px;padding:8px 10px;border-radius:9px;font-size:11.5px;line-height:1.7;
+  border:1px solid var(--line);background:rgba(255,255,255,.03);word-break:break-word}
+.cstat.show{display:block}
+.cstat.ok{border-color:rgba(84,217,154,.45);color:#8ff0c0}
+.cstat.err{border-color:rgba(255,120,120,.45);color:#ffb0b0}
+
+/* ── 大模型回答渲染 ── */
+.am.bot .mdh{font-size:12.5px;font-weight:600;color:var(--gold);margin:9px 0 4px}
+.am.bot .mdh:first-child{margin-top:0}
+.am.bot .li{position:relative;padding-left:13px;margin:3px 0;color:#d5e2f2}
+.am.bot .li::before{content:"·";position:absolute;left:2px;top:0;color:var(--accent);font-weight:700}
+.am.bot .rxline{display:block;margin:9px 0 3px;font-size:11.5px;font-weight:600;color:#ffd166;
+  letter-spacing:1px}
+.am.bot code{font-family:ui-monospace,Consolas,monospace;font-size:11.5px;
+  background:rgba(126,200,255,.12);padding:1px 4px;border-radius:4px}
+.am.bot .curl{display:inline-block;width:6px;height:12px;margin-left:3px;vertical-align:-2px;
+  background:var(--gold);animation:aiBl .9s infinite}
+.am.bot .mstat{margin-top:8px;padding-top:6px;border-top:1px dashed var(--line);
+  font-size:10px;color:var(--sub)}
+.am.bot .aierr{font-size:11.5px;line-height:1.7;color:#ffb0b0;margin:6px 0}
+.aiin button.stop{background:rgba(255,120,120,.16);border-color:rgba(255,120,120,.5);color:#ff9d9d}
+
+@media (max-width:760px){
+  :root{--panelw:min(288px,84vw)}
+  #panelHandle{display:none}
+  #rxbar{left:calc(var(--panelw) + 12px)}
+  body.pcol #rxbar{left:12px}
+}
+/* ============================================================
+   v9.1 修复
+   1) .aih 头部：.st 原设固定 max-width:136px，330px 宽面板内
+      8+9+标题(约117)+9+136+⚙25+✕25 ≈ 329 > 内容宽 306 → 头部挤压/溢出，
+      改为 flex:1 + min-width:0 自适应省略；并禁止标题换行。
+   2) ≤760px 顶栏：菜单34+品牌163+视图切换134+AI按钮82+帮助30+间距 ≈ 500px
+      > 视口可用宽 → 窄屏溢出，收窄间距并隐藏品牌文字（≤430px 连 logo 一并隐藏）。
+   3) ≤760px #rxbar：原 left:calc(var(--panelw)+12px)，而 --panelw=84vw，
+      会把置底处方面板推出屏外 → 固定 left:12px。
+   4) 移动端 AI 窗口上移，头部状态文本进一步收窄。
+   ============================================================ */
+.aih{flex-wrap:nowrap;white-space:nowrap;overflow:hidden}
+.aih .st{flex:1 1 auto;min-width:0;max-width:none;margin-left:0;text-align:right}
+#aiWarn{margin:0 10px 8px;max-height:64px;overflow:auto}
+@media (max-width:760px){
+  #topbar{gap:9px;padding:0 10px}
+  .brand h1,.brand p{display:none}
+  #vsw button{padding:5px 8px;font-size:11px}
+  #btnAI{padding:0 9px;font-size:11px}
+  #rxbar{left:12px}
+  body.pcol #rxbar{left:12px}
+  #aiWin{top:52px}
+  .aih .st{max-width:104px}
+}
+@media (max-width:430px){
+  .brand{display:none}
+  #topbar{gap:7px;padding:0 8px}
+  #vsw button{padding:5px 6px}
+  #btnAI{padding:0 8px}
+  .aih .st{max-width:84px}
+}
+/* ============================================================
+   v9.2 修复：右侧浮层互相遮挡
+   #detail  right:14px + 宽 264  → 占据视口右侧 14..278
+   #aiWin   right:58px + 宽 330  → 占据视口右侧 58..388
+   两者横向重叠约 220px，而 #detail 的 z-index(27) < #aiWin(28)，
+   于是「点穴位看详情」时详情卡被 AI 面板压住一大块。
+   #wuxleg(right:58px, z-index:24) 更会被 AI 面板整块盖住。
+   方案：AI 面板打开时（body.aiopen）把详情卡与五输图例整体左移到面板左侧；
+   窄屏无法并排，改为把 #detail 提到面板之上（z-index:29），
+   保证「从 AI 回答里点穴位」仍能立即看见详情卡。
+   ============================================================ */
+#detail{transition:transform .35s cubic-bezier(.2,.8,.25,1),right .28s cubic-bezier(.2,.8,.25,1)}
+#wuxleg{transition:right .28s cubic-bezier(.2,.8,.25,1)}
+body.aiopen #detail{right:394px}
+body.aiopen #wuxleg{right:394px}
+@media (max-width:1100px){
+  body.aiopen #detail{right:14px}
+  body.aiopen #wuxleg{right:58px}
+}
+@media (max-width:760px){
+  #detail{z-index:29}
+  body.aiopen #detail{right:14px}
+  body.aiopen #wuxleg{right:58px}
+}
+/* ============================================================
+   v9.3 修复：底部浮层冲突
+   #rxbar(left 302..590, bottom 14..244) 与 #flowbar(居中, bottom 12..62) 相交约 160x48，
+   两者 z-index 同为 26，而 #rxbar 在 DOM 更靠后 → 覆盖流注控制条左端。
+   桌面把处方面板抬高到控制条之上；窄屏原本就是 bottom:70px，保持一致。
+   顺带收紧窄屏帮助卡内边距与标题字距。
+   ============================================================ */
+#rxbar{bottom:80px}
+@media (max-width:760px){
+  #rxbar{bottom:70px}
+  #help .card{padding:18px 16px}
+  #help h4{letter-spacing:1px;margin:12px 0 5px}
+}
+</style>
+
+</head>
+<body>
+<canvas id="cv"></canvas>
+<div id="vig"></div>
+
+<header id="topbar">
+  <button id="btnMenu" title="折叠 / 展开左侧面板（快捷键 [ ）">◀</button>
+  <div class="brand">
+    <div class="logo">經</div>
+    <div><h1>经络循行 · 无限画布</h1><p>MERIDIAN GRAPH · CIRCULAR FLOW</p></div>
+  </div>
+  <div id="vsw">
+    <button data-v="body">人体图</button>
+    <button data-v="circ">圆环图</button>
+    <button data-v="all">全景</button>
+  </div>
+  <button id="btnAI">🤖 AI 助手</button>
+  <div id="stats"></div>
+  <button id="btnHelp" title="帮助">?</button>
+</header>
+
+<button id="panelHandle" title="折叠 / 展开左侧面板（快捷键 [ ）">◀</button>
+<aside id="panel">
+  <div class="pbody">
+    <div class="sec">
+      <div class="search">
+        <input id="q" placeholder="搜索穴位 / 经脉 / 病证…" autocomplete="off">
+        <div class="sug" id="sug"></div>
+      </div>
+    </div>
+    <div class="sec"><h3>十四经脉 · 人体图</h3><div id="mlist"></div></div>
+    <div class="sec"><h3>奇经八脉 · 圆环图</h3><div id="mlist2"></div></div>
+    <div class="sec"><h3>病证处方库</h3>
+      <input id="dq" class="dzq" placeholder="按病证 / 治法 / 穴位检索…" autocomplete="off">
+      <div id="dcats"></div>
+      <div id="dlist"></div>
+    </div>
+    <div class="sec"><h3>图层显示</h3><div id="opts"></div></div>
+    <div class="sec"><h3>关于数据</h3>
+      <p style="font-size:11px;color:var(--sub);line-height:1.8;padding:0 4px">
+      人体图穴序依《经络腧穴学》十四经标准；穴名与经脉归属按 GB/T 12346；要穴定位采用国标骨度分寸表述。坐标为教学示意；圆环图为拓扑示意；子母补泻按本经五输穴五行推演。AI 助手为本地知识引擎，所有建议仅供学习参考。</p>
+    </div>
+  </div>
+</aside>
+
+<footer id="flowbar">
+  <button id="btnPlay" title="播放子午流注">▶</button>
+  <div id="dots"></div>
+  <div id="flowtxt"><b>子午流注</b><span>十二时辰 · 气血流注循环</span></div>
+</footer>
+
+<div id="zoomctl">
+  <button id="exPng" class="txt" title="导出当前视图为 PNG 截图">PNG</button>
+  <button id="exSvg" class="txt" title="导出全图矢量 SVG">SVG</button>
+  <button id="zi" title="放大">＋</button>
+  <button id="zo" title="缩小">－</button>
+  <button id="zf" title="全景复位">⌂</button>
+</div>
+<div id="zoomval">100%</div>
+
+<div id="wuxleg"></div>
+
+<div id="tip"></div>
+
+<div id="rxbar">
+  <div class="rxh"><b>📋 配穴处方</b><span id="rxCnt"></span><button id="rxClear">清空</button></div>
+  <div id="rxList"></div>
+</div>
+
+<div id="aiWin">
+  <div class="aih off" id="aiHead"><span class="dotp"></span>🤖 针灸智能助手
+    <span class="st" id="aiMode">本地知识引擎</span>
+    <button id="aiCfgBtn" title="模型与接口设置">⚙</button>
+    <button id="aiClose" title="关闭">✕</button></div>
+  <div id="aiWarn">未配置 API Key，当前使用<b>本地知识引擎</b>；点右上角 <b>⚙</b> 可接入 <b>智谱清言</b> / <b>DeepSeek</b>。</div>
+  <div id="aiMsgs"></div>
+  <div id="aiChips"></div>
+  <div class="aiin">
+    <input id="aiInput" placeholder="描述症状，如：我最近失眠多梦…" autocomplete="off">
+    <button id="aiSend">发送</button>
+  </div>
+  <div class="aidis">⚠️ 建议仅供学习参考，针灸须由执业医师辨证操作；急重症请立即就医</div>
+  <div id="aiCfg">
+    <div class="cfgh">⚙ 模型与接口设置<button id="aiCfgClose" title="收起">✕</button></div>
+    <div class="cfgb">
+      <div class="cfgl">推理引擎</div>
+      <div class="provs" id="cfgProvs"></div>
+      <div class="cfgl">API KEY</div>
+      <div class="keyrow">
+        <input id="cfgKey" type="password" placeholder="粘贴 API Key（仅保存于本机浏览器）" autocomplete="off" spellcheck="false">
+        <button id="cfgEye" title="显示 / 隐藏">👁</button>
+      </div>
+      <div class="cnote" id="cfgKeyNote"></div>
+      <div class="cfgl">模型</div>
+      <div class="crow"><input id="cfgModel" list="cfgModels" placeholder="模型名，如 glm-4-flash" autocomplete="off" spellcheck="false">
+        <datalist id="cfgModels"></datalist></div>
+      <div class="cfgl">接口地址（Base URL）</div>
+      <div class="crow"><input id="cfgBase" placeholder="https://.../chat/completions" autocomplete="off" spellcheck="false"></div>
+      <div class="cnote">留空则使用所选引擎的默认地址；若浏览器直连被跨域（CORS）拦截，可填写自建代理的 OpenAI 兼容地址。</div>
+      <div class="cfgl">回答方式</div>
+      <div class="crow"><select id="cfgMode">
+        <option value="auto">自动 · 有 Key 用大模型，失败回退本地知识库</option>
+        <option value="local">仅用本地知识库（完全离线）</option>
+        <option value="online">仅用大模型（失败即提示，不回退）</option>
+      </select></div>
+      <div class="crow"><select id="cfgStream">
+        <option value="1">流式输出（打字机效果）</option>
+        <option value="0">一次性输出</option>
+      </select></div>
+      <div class="cbtns">
+        <button class="cbtn" id="cfgSave">保存设置</button>
+        <button class="cbtn ghost" id="cfgTest">测试连接</button>
+      </div>
+      <div class="cstat" id="cfgStat"></div>
+      <div class="cnote" style="margin-top:16px">
+        🔐 API Key 仅保存在本机浏览器 localStorage，仅发送给你所选的服务商；建议使用<b>限额 Key</b>，勿在公共设备填写。<br>
+        ⚖️ 大模型生成内容可能有误，处方须经执业医师辨证后使用。
+      </div>
+    </div>
+  </div>
+</div>
+
+<aside id="detail">
+  <button id="dClose">✕</button>
+  <div class="bar" id="dBar"></div>
+  <h2 id="dName"></h2>
+  <div class="m" id="dMer"></div>
+  <div class="tags" id="dTags"></div>
+  <div class="tags" id="dExtra"></div>
+  <div class="note" id="dNote"></div>
+  <div class="loc" id="dLoc"></div>
+  <div class="rxs" id="dZi"></div>
+  <div class="rxs" id="dRx"></div>
+  <div class="pos" id="dPos"></div>
+</aside>
+
+<div id="hint">左上 ◀ 折叠面板（快捷键 [ ）· 穴位名称三档可调 · 🤖 AI 助手可接智谱清言 / DeepSeek</div>
+<div id="toast"></div>
+
+<div id="help">
+  <div class="card">
+    <h2>使用指南</h2>
+    <h4>穴位名称显示</h4>
+    <ul>
+      <li>人体图与圆环图上所有穴位名称实时显示，「图层显示 → 穴位名称」三档：<b style="color:#dfe9f5">全部</b>（默认）／<b style="color:#dfe9f5">要穴</b>／<b style="color:#dfe9f5">关闭</b></li>
+      <li>标签为屏幕空间恒定字号，任意缩放均清晰；自动防重叠排布，优先交会/特定穴，放大后显示更全</li>
+      <li>悬停/选中穴位及聚焦经脉的名称必定显示</li>
+    </ul>
+    <h4>🤖 AI 针灸助手（右上角开启）</h4>
+    <ul>
+      <li>按症状推荐处方：「我偏头痛」「最近失眠」「胃痛怎么缓解」→ 主穴 + 加减配伍 + 调护建议</li>
+      <li>穴位问答：「足三里有什么用」→ 穴性 / 主治 / 国标定位 / 配伍</li>
+      <li>经脉与时辰：「胃经」「现在什么时辰当令」；虚实补泻：「肾虚补什么穴」</li>
+      <li>推荐结果可<b style="color:#ffd166">一键载入画布</b>组方连线；未配置 Key 时全部本地运行，仅供参考</li>
+      <li><b style="color:#ffd166">在线大模型</b>：点助手右上角 <b>⚙</b> 可接入 <b>智谱清言（glm-4-flash）</b> 或 <b>DeepSeek</b>，填入自有 API Key 后即可自由问答；调用失败会自动回退本地知识库，回答中的穴位名可直接点击定位</li>
+    </ul>
+    <h4>画布操作</h4>
+    <ul>
+      <li>拖拽平移、滚轮 / 双指缩放；顶部切换 人体图 / 圆环图 / 全景</li>
+      <li>点击穴位 → 详情卡（穴性 · 国标定位 · 子母补泻 · 配伍）；双击空白回全景</li>
+      <li>左上 <b>◀</b> 或左缘竖向把手可折叠左侧面板（快捷键 <b>[</b> / Ctrl+B），折叠状态自动记忆</li>
+    </ul>
+    <h4>图例</h4>
+    <div class="lg"><i style="background:#fff;box-shadow:0 0 6px #fff"></i>交会/募穴&nbsp;&nbsp;<i style="background:#ffd76e"></i>特定穴&nbsp;&nbsp;<i style="background:#54d99a;width:7px;height:7px"></i>经穴&nbsp;&nbsp;<i style="background:#ffd166"></i>◎八脉交会</div>
+    <div class="lg"><i style="background:#6fe08a"></i>木&nbsp;&nbsp;<i style="background:#ff6b57"></i>火&nbsp;&nbsp;<i style="background:#ffd166"></i>土&nbsp;&nbsp;<i style="background:#eef4ff"></i>金&nbsp;&nbsp;<i style="background:#5aa7ff"></i>水</div>
+    <button id="hClose">开始探索</button>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   经络循行 · 无限画布 v8（修复版）
+   ★ 修复1（致命）：drawCircleFrame 中 [R_RD,R_DAI,R_W,R,Q]
+     → [R_RD,R_DAI,R_W,R_Q]（R,Q 未定义导致渲染循环中断）
+   ★ 修复2：NOTE 中「交信」重复键清理
+   ★ 修复3：SPEC 阳跷脉「申脉」穴性文案修正
+   ============================================================ */
+'use strict';
+const VIEWS={F:0,B:1500};
+const $=id=>document.getElementById(id);
+const cv=$('cv'),ctx=cv.getContext('2d');
+let W=0,H=0,DPR=1;
+
+/* ── 十四经数据：[穴名 x y 视图?]，顺序即循行方向 ── */
+const D={
+LU:{name:'手太阴肺经',abbr:'肺',wx:'金',color:'#ffd76e',view:'F',
+ pts:'中府 168 432;云门 186 412;天府 215 570;侠白 218 655;尺泽 225 772;孔最 232 880;列缺 238 962;经渠 242 992;太渊 244 1012;鱼际 252 1058;少商 256 1082'},
+LI:{name:'手阳明大肠经',abbr:'大肠',wx:'金',color:'#ffb14e',view:'F',
+ pts:'商阳 272 1096;二间 274 1078;三间 270 1060;合谷 264 1046;阳溪 250 1016;偏历 246 950;温溜 244 900;下廉 242 860;上廉 240 830;手三里 238 802;曲池 240 776;肘髎 250 758;手五里 248 710;臂臑 246 648;肩髃 212 398;巨骨 190 378;天鼎 74 348;扶突 60 318;口禾髎 26 246;迎香 24 198'},
+ST:{name:'足阳明胃经',abbr:'胃',wx:'土',color:'#ff8a5f',view:'F',
+ pts:'承泣 14 172;四白 26 196;巨髎 34 214;地仓 38 238;大迎 58 262;颊车 82 244;下关 60 178;头维 88 110;人迎 36 326;水突 46 346;气舍 56 366;缺盆 52 394;气户 100 418;库房 100 452;屋翳 100 486;膺窗 100 518;乳中 100 545;乳根 100 572;不容 50 612;承满 50 638;梁门 50 664;关门 50 690;太乙 50 714;滑肉门 50 738;天枢 50 780;外陵 50 806;大巨 50 832;水道 50 858;归来 50 884;气冲 50 948;髀关 98 1005;伏兔 100 1090;阴市 100 1175;梁丘 98 1242;犊鼻 88 1302;足三里 78 1362;上巨虚 74 1420;条口 70 1468;下巨虚 68 1516;丰隆 52 1462;解溪 72 1590;冲阳 66 1622;陷谷 60 1650;内庭 52 1672;厉兑 44 1694'},
+SP:{name:'足太阴脾经',abbr:'脾',wx:'土',color:'#ff6b8d',view:'F',
+ pts:'隐白 38 1692;大都 46 1668;太白 52 1646;公孙 46 1624;商丘 52 1590;三阴交 42 1528;漏谷 48 1428;地机 54 1338;阴陵泉 56 1294;血海 70 1246;箕门 62 1120;冲门 68 958;府舍 84 918;腹结 100 862;大横 100 780;腹哀 100 742;食窦 148 620;天溪 148 562;胸乡 148 528;周荣 148 494;大包 165 608'},
+HT:{name:'手少阴心经',abbr:'心',wx:'火',color:'#ff4d6e',view:'F',
+ pts:'极泉 175 425;青灵 228 622;少海 236 782;灵道 244 915;通里 248 952;阴郄 250 972;神门 252 1002;少府 262 1052;少冲 286 1096'},
+SI:{name:'手太阳小肠经',abbr:'小肠',wx:'火',color:'#e255a0',view:'F',
+ pts:'少泽 290 1094;前谷 286 1076;后溪 282 1058;腕骨 276 1032;阳谷 268 1006;养老 264 970;支正 262 898;小海 262 788;肩贞 205 402 B;臑俞 215 375 B;天宗 158 428 B;秉风 162 390 B;曲垣 136 372 B;肩外俞 80 352 B;肩中俞 46 340 B;天窗 58 300 F;天容 76 268 F;颧髎 44 198 F;听宫 86 166 F'},
+BL:{name:'足太阳膀胱经',abbr:'膀胱',wx:'水',color:'#b57bef',view:'F',
+ pts:'睛明 12 164;攒竹 16 132;眉冲 28 112;曲差 36 106;五处 42 94;承光 48 86;通天 54 80;络却 56 76;玉枕 42 240 B;天柱 40 320 B;大杼 32 455 B;风门 32 485 B;肺俞 32 515 B;厥阴俞 32 545 B;心俞 32 575 B;督俞 32 605 B;膈俞 32 635 B;肝俞 32 668 B;胆俞 32 698 B;脾俞 32 728 B;胃俞 32 758 B;三焦俞 32 788 B;肾俞 32 818 B;气海俞 32 848 B;大肠俞 32 878 B;关元俞 32 908 B;小肠俞 32 938 B;膀胱俞 32 968 B;中膂俞 32 998 B;白环俞 32 1028 B;上髎 16 985 B;次髎 20 1015 B;中髎 23 1045 B;下髎 26 1072 B;会阳 30 1090 B;承扶 70 1078 B;殷门 68 1170 B;浮郄 64 1265 B;委阳 74 1330 B;委中 65 1345 B;合阳 62 1390 B;承筋 60 1440 B;承山 62 1500 B;飞扬 76 1455 B;跗阳 78 1520 B;昆仑 78 1583 B;仆参 82 1612 B;申脉 84 1622 B;金门 86 1648 B;京骨 88 1668 B;束骨 86 1688 B;足通谷 88 1700 B;至阴 92 1708 B',
+ branch:{from:'天柱',to:'承扶',
+  pts:'附分 72 455;魄户 72 485;膏肓 72 515;神堂 72 545;譩譆 72 575;膈关 72 605;魂门 72 640;阳纲 72 672;意舍 72 704;胃仓 72 736;肓门 72 768;志室 72 800;胞肓 72 900;秩边 72 1000'}},
+KI:{name:'足少阴肾经',abbr:'肾',wx:'水',color:'#8b8cf5',view:'F',
+ pts:'涌泉 58 1698;然谷 45 1662;太溪 34 1586;大钟 28 1600;水泉 30 1615;照海 24 1618;复溜 33 1530;交信 29 1542;筑宾 38 1440;阴谷 44 1340;横骨 28 948;大赫 28 922;气穴 28 896;四满 28 870;中注 28 844;肓俞 28 812;商曲 28 758;石关 28 734;阴都 28 710;腹通谷 28 688;幽门 28 666;步廊 55 630;神封 55 596;灵墟 55 566;神藏 55 536;彧中 55 508;俞府 55 482'},
+PC:{name:'手厥阴心包经',abbr:'心包',wx:'相火',color:'#64a8ff',view:'F',
+ pts:'天池 125 548;天泉 200 482;曲泽 214 778;郄门 224 862;间使 228 906;内关 232 948;大陵 236 1006;劳宫 254 1050;中冲 268 1104'},
+TE:{name:'手少阳三焦经',abbr:'三焦',wx:'相火',color:'#4fd6d0',view:'F',
+ pts:'关冲 280 1100;液门 276 1078;中渚 272 1058;阳池 260 1022;外关 256 955;支沟 254 905;会宗 260 880;三阳络 258 848;四渎 254 815;天井 252 775;清冷渊 254 720;消泺 256 668;臑会 258 602;肩髎 218 388;天髎 196 364;翳风 97 212;瘈脉 99 196;颅息 97 180;角孙 95 124;耳门 88 166;耳和髎 99 154;丝竹空 70 150'},
+GB:{name:'足少阳胆经',abbr:'胆',wx:'木',color:'#54d99a',view:'F',
+ pts:'瞳子髎 66 176;听会 92 186;上关 102 162;颔厌 92 106;悬颅 97 116;悬厘 99 130;曲鬓 95 148;率谷 84 96;天冲 74 90;浮白 64 98;完骨 96 228;本神 66 120;阳白 54 134;头临泣 46 116;目窗 40 98;正营 34 84;承灵 28 72;脑空 22 60;风池 44 305 B;肩井 76 388 B;渊腋 142 545 B;辄筋 132 570 B;日月 122 600 B;京门 148 762 B;带脉 152 800 B;五枢 148 880 B;维道 158 905 B;居髎 178 955 B;环跳 88 1075 B;风市 92 1190 B;中渎 90 1252 B;膝阳关 82 1290 B;阳陵泉 76 1328 B;阳交 70 1388 B;外丘 68 1422 B;光明 64 1458 B;阳辅 60 1502 B;悬钟 58 1532 B;丘墟 72 1590 B;足临泣 62 1638 B;地五会 58 1658 B;侠溪 52 1674 B;足窍阴 46 1698 B'},
+LR:{name:'足厥阴肝经',abbr:'肝',wx:'木',color:'#a8e05f',view:'F',
+ pts:'大敦 36 1694;行间 44 1672;太冲 50 1650;中封 50 1612;蠡沟 46 1528;中都 44 1440;膝关 52 1332;曲泉 44 1318;阴包 42 1180;足五里 48 1090;阴廉 52 1030;急脉 60 975;章门 145 775;期门 112 610'},
+CV:{name:'任脉',abbr:'任脉',wx:'阴脉之海',color:'#f2f7ff',view:'F',
+ pts:'会阴 0 1005;曲骨 0 955;中极 0 930;关元 0 895;石门 0 865;气海 0 835;阴交 0 810;神阙 0 780;水分 0 750;下脘 0 720;建里 0 695;中脘 0 665;上脘 0 635;巨阙 0 605;鸠尾 0 580;中庭 0 555;膻中 0 528;玉堂 0 502;紫宫 0 478;华盖 0 455;璇玑 0 432;天突 0 408;廉泉 0 300;承浆 0 258'},
+GV:{name:'督脉',abbr:'督脉',wx:'阳脉之海',color:'#ffe9a6',view:'B',
+ pts:'长强 0 1020;腰俞 0 955;腰阳关 0 870;命门 0 790;悬枢 0 745;脊中 0 700;中枢 0 670;筋缩 0 640;至阳 0 598;灵台 0 570;神道 0 542;身柱 0 512;陶道 0 482;大椎 0 452;哑门 0 322;风府 0 300;脑户 0 228;强间 0 205;后顶 0 175;百会 0 88;前顶 0 92 F;囟会 0 104 F;上星 0 116 F;神庭 0 126 F;素髎 0 192 F;水沟 0 210 F;兑端 0 228 F;龈交 0 240 F'}
+};
+
+/* ── 圆环图参数与奇经八脉 ── */
+const CIR={x:3560,y:900};
+const R_M=720,R_RD=520,R_DAI=400,R_W=295,R_Q=185;
+const ZI=[['子','GB'],['丑','LR'],['寅','LU'],['卯','LI'],['辰','ST'],['巳','SP'],
+          ['午','HT'],['未','SI'],['申','BL'],['酉','KI'],['戌','PC'],['亥','TE']];
+const ziAng=i=>Math.PI/2+i*Math.PI/6;
+const D2={
+CH:{name:'冲脉',wx:'十二经之海 · 血海',color:'#c96bff',
+    line:'气冲 横骨 大赫 气穴 四满 中注 育俞 商曲 石关 阴都 腹通谷 幽门'},
+DAI:{name:'带脉',wx:'总束诸经 · 如束带然',color:'#ff7bd0',
+    line:'带脉 五枢 维道'},
+YINW:{name:'阴维脉',wx:'维络诸阴',color:'#6f9fff',
+    line:'筑宾 冲门 府舍 大横 腹哀 期门 天突 廉泉'},
+YANGW:{name:'阳维脉',wx:'维络诸阳',color:'#9fd8ff',
+    line:'金门 阳交 臑俞 天髎 肩井 风池 哑门 风府 脑户 本神'},
+YINQ:{name:'阴跷脉',wx:'主身左右之阴',color:'#e09bff',
+    line:'照海 交信'},
+YANGQ:{name:'阳跷脉',wx:'主身左右之阳',color:'#ffc46b',
+    line:'申脉 仆参 跗阳 居髎 臑俞'}
+};
+
+/* ── 八脉交会配对 ── */
+const BM=[
+ {a:['SP','公孙'],b:['PC','内关'],name:'冲脉 · 阴维脉',zhu:'心 · 胸 · 胃'},
+ {a:['SI','后溪'],b:['BL','申脉'],name:'督脉 · 阳跷脉',zhu:'目内眦 · 颈项 · 耳 · 肩'},
+ {a:['GB','足临泣'],b:['TE','外关'],name:'带脉 · 阳维脉',zhu:'目锐眦 · 耳后 · 颊 · 颈 · 肩'},
+ {a:['LU','列缺'],b:['KI','照海'],name:'任脉 · 阴跷脉',zhu:'肺系 · 咽喉 · 胸膈'}
+];
+const BMIDX={};BM.forEach(p=>{BMIDX[p.a[1]]=p;BMIDX[p.b[1]]=p;});
+
+/* ── 五输穴五行 ── */
+const WUX={'木':'#6fe08a','火':'#ff6b57','土':'#ffd166','金':'#eef4ff','水':'#5aa7ff'};
+const SHU_ORDER=['井','荥','输','经','合'];
+const WUXING={
+LU:{'少商':'木','鱼际':'火','太渊':'土','经渠':'金','尺泽':'水'},
+LI:{'商阳':'金','二间':'水','三间':'木','阳溪':'火','曲池':'土'},
+ST:{'厉兑':'金','内庭':'水','陷谷':'木','解溪':'火','足三里':'土'},
+SP:{'隐白':'木','大都':'火','太白':'土','商丘':'金','阴陵泉':'水'},
+HT:{'少冲':'木','少府':'火','神门':'土','灵道':'金','少海':'水'},
+SI:{'少泽':'金','前谷':'水','后溪':'木','阳谷':'火','小海':'土'},
+BL:{'至阴':'金','足通谷':'水','束骨':'木','昆仑':'火','委中':'土'},
+KI:{'涌泉':'木','然谷':'火','太溪':'土','复溜':'金','阴谷':'水'},
+PC:{'中冲':'木','劳宫':'火','大陵':'土','间使':'金','曲泽':'水'},
+TE:{'关冲':'金','液门':'水','中渚':'木','支沟':'火','天井':'土'},
+GB:{'足窍阴':'金','侠溪':'水','足临泣':'木','阳辅':'火','阳陵泉':'土'},
+LR:{'大敦':'木','行间':'火','太冲':'土','中封':'金','曲泉':'水'}};
+function wuxOf(m,name){const tb=WUXING[m.id];if(!tb)return null;
+  const el=tb[name];if(!el)return null;
+  return {sh:SHU_ORDER[Object.keys(tb).indexOf(name)],el};}
+
+/* ── 子母补泻引擎 ── */
+const SHENG={'木':'火','火':'土','土':'金','金':'水','水':'木'};
+const MU_EL={'木':'水','火':'木','土':'火','金':'土','水':'金'};
+const EL_MERS={'木':'肝、胆','火':'心、小肠、心包','土':'脾、胃','金':'肺、大肠','水':'肾、膀胱'};
+const ORG2MER={'肺':'LU','大肠':'LI','胃':'ST','脾':'SP','心包':'PC','心':'HT','小肠':'SI','膀胱':'BL','肾':'KI','三焦':'TE','胆':'GB','肝':'LR'};
+function normEl(wx){return wx==='相火'?'火':wx;}
+function shuOfEl(mid,el){
+  const tb=WUXING[mid];if(!tb)return null;
+  const ks=Object.keys(tb);
+  for(let i=0;i<ks.length;i++)if(tb[ks[i]]===el)return{name:ks[i],sh:SHU_ORDER[i]};
+  return null;}
+function zimu(mid){
+  if(!WUXING[mid]||!D[mid])return null;
+  const E=normEl(D[mid].wx);
+  const z={E,mu:shuOfEl(mid,MU_EL[E]),zi:shuOfEl(mid,SHENG[E])};
+  return(z.mu&&z.zi)?z:null;}
+
+/* ── 十五络脉 ── */
+const LUO=[
+ {from:['LU','列缺'],to:['LI','偏历']},
+ {from:['LI','偏历'],to:['LU','列缺']},
+ {from:['ST','丰隆'],to:['SP','漏谷']},
+ {from:['SP','公孙'],to:['ST','解溪']},
+ {from:['HT','通里'],to:['SI','支正']},
+ {from:['SI','支正'],to:['HT','通里']},
+ {from:['BL','飞扬'],to:['KI','复溜']},
+ {from:['KI','大钟'],to:['BL','飞扬']},
+ {from:['PC','内关'],to:['TE','外关']},
+ {from:['TE','外关'],to:['PC','内关']},
+ {from:['GB','光明'],to:['LR','中都']},
+ {from:['LR','蠡沟'],to:['GB','光明']},
+ {from:['CV','鸠尾'],fan:[{dx:.32,dy:1,len:58},{dx:0,dy:1,len:74},{dx:-.32,dy:1,len:58}]},
+ {from:['GV','长强'],fan:[{dx:.42,dy:-.9,len:78},{dx:0,dy:-1,len:92},{dx:-.42,dy:-.9,len:78}]},
+ {from:['SP','大包'],fan:[{dx:1,dy:.26,len:58},{dx:1,dy:-.16,len:58},{dx:1,dy:.05,len:78}]}
+];
+
+/* ── 原穴/络穴/表里/俞募映射 ── */
+const BIAOLI={LU:'LI',LI:'LU',ST:'SP',SP:'ST',HT:'SI',SI:'HT',BL:'KI',KI:'BL',PC:'TE',TE:'PC',GB:'LR',LR:'GB'};
+const YUAN={LU:'太渊',LI:'合谷',ST:'冲阳',SP:'太白',HT:'神门',SI:'腕骨',BL:'京骨',KI:'太溪',PC:'大陵',TE:'阳池',GB:'丘墟',LR:'太冲'};
+const LUOPT={LU:'列缺',LI:'偏历',ST:'丰隆',SP:'公孙',HT:'通里',SI:'支正',BL:'飞扬',KI:'大钟',PC:'内关',TE:'外关',GB:'光明',LR:'蠡沟'};
+const SHU={'肺':'肺俞','心包':'厥阴俞','心':'心俞','肝':'肝俞','胆':'胆俞','脾':'脾俞','胃':'胃俞','大肠':'大肠俞','膀胱':'膀胱俞','小肠':'小肠俞','三焦':'三焦俞','肾':'肾俞'};
+const MU={'肺':'中府','心包':'膻中','心':'巨阙','肝':'期门','胆':'日月','脾':'章门','胃':'中脘','大肠':'天枢','膀胱':'中极','小肠':'关元','三焦':'石门','肾':'京门'};
+
+/* ── 经典配伍数据库 ── */
+const PE={
+'合谷':[['太冲','四关穴','开四关，行气止痛'],['复溜','汗证','发汗止汗双向'],['风池','外感','祛风解表'],['曲池','热病','清热治疹'],['迎香','鼻病','通鼻窍']],
+'太冲':[['合谷','四关穴','开郁止痛'],['侠溪','肝胆火','清泻肝胆'],['百会','肝阳','平肝潜阳'],['期门','肝郁','疏肝解郁']],
+'足三里':[['中脘','胃病','和胃消滞'],['三阴交','气血','双补气血'],['内关','止呕','和胃降逆'],['天枢','肠腑','调理肠胃'],['梁丘','急症','急性胃痛']],
+'三阴交':[['关元','妇科','培元调经'],['地机','痛经','痛经要配'],['足三里','气血','气血双补'],['太溪','滋阴','滋阴益肾']],
+'内关':[['公孙','八脉交会','心胸胃'],['膻中','宽胸','理气宽胸'],['神门','宁心','心悸失眠'],['足三里','和胃','降逆止呕']],
+'公孙':[['内关','八脉交会','心胸胃'],['中脘','胃心胸','和胃宽胸']],
+'神门':[['心俞','宁心','心悸失眠'],['三阴交','安眠','滋阴安神'],['内关','心悸','宁心定悸']],
+'肾俞':[['太溪','补肾','俞原相配'],['委中','腰背','腰背委中求'],['命门','温阳','温补肾阳']],
+'太溪':[['肾俞','补肾','俞原相配'],['照海','咽干','滋阴利咽'],['三阴交','滋阴','滋阴要配']],
+'委中':[['肾俞','腰背','腰背委中求'],['承山','腿痛','腿痛转筋'],['昆仑','腰腿','舒筋活络']],
+'后溪':[['申脉','八脉交会','颈项强痛'],['天柱','项强','舒项止痛'],['大椎','项背','通阳解表']],
+'列缺':[['照海','八脉交会','肺系咽喉'],['合谷','原络配','肺与大肠原络'],['风池','头项','头项寻列缺']],
+'外关':[['足临泣','八脉交会','目锐眦耳后'],['风池','偏头痛','祛风止痛'],['曲池','上肢','上肢痹痛']],
+'风池':[['合谷','外感','祛风解表'],['率谷','偏头痛','偏头痛要配'],['百会','眩晕','清头明目']],
+'百会':[['气海','升提','气虚下陷'],['太冲','镇肝','平肝潜阳'],['水沟','醒脑','醒神开窍']],
+'关元':[['三阴交','妇科','培元调经'],['足三里','保健灸','培元固本'],['气海','元气','大补元气']],
+'中脘':[['足三里','胃病','和胃消滞'],['内关','止呕','和胃止呕'],['丰隆','化痰','化痰和胃']],
+'天枢':[['上巨虚','募合配','大肠募配下合穴'],['足三里','肠腑','调理肠腑'],['支沟','便秘','通腑排便']],
+'曲池':[['合谷','清热','清热要配'],['血海','风疹','血热风疹'],['大椎','退热','退热要配']],
+'血海':[['曲池','血热','清热凉血'],['三阴交','血证','调经统血'],['足三里','气血','气血双调']],
+'阳陵泉':[['悬钟','筋髓','筋会髓会相配'],['丘墟','胆腑','利胆'],['内关','胁痛','宽胸利胁']],
+'丰隆':[['中脘','化痰','化痰和胃'],['阴陵泉','痰湿','化痰利湿']],
+'支沟':[['天枢','便秘','通腑'],['照海','津亏','滋液通便']],
+'迎香':[['合谷','鼻病','面口合谷收'],['上星','鼻渊','通利鼻窍']],
+'睛明':[['光明','目疾','明目要配'],['太冲','目赤','清肝明目']],
+'听宫':[['翳风','耳病','聪耳'],['外关','耳疾','少阳耳疾']],
+'大椎':[['曲池','退热','退热要配'],['后溪','项背','项背强痛'],['肺俞','咳喘','宣肺平喘']],
+'膻中':[['内关','宽胸','宽胸理气'],['天突','降气','降气止咳'],['太冲','气滞','疏理气机']],
+'涌泉':[['劳宫','清心','清心引热下行'],['太溪','滋肾','滋水降火']],
+'阴陵泉':[['丰隆','痰湿','化痰利湿'],['三阴交','利水','利水渗湿']],
+'照海':[['列缺','八脉交会','咽喉胸膈'],['太溪','滋阴','滋肾利咽']],
+'申脉':[['后溪','八脉交会','颈项肩'],['昆仑','踝痛','踝痛']],
+'足临泣':[['外关','八脉交会','目锐眦耳后'],['阳陵泉','胁肋','胁肋痛']],
+'肺俞':[['中府','俞募配','肺之俞募'],['太渊','补肺','补肺益气']],
+'肝俞':[['太冲','俞原配','肝之俞原'],['期门','俞募配','肝之俞募']],
+'脾俞':[['章门','俞募配','脾之俞募'],['阴陵泉','健脾','健脾利湿']],
+'胃俞':[['中脘','俞募配','胃之俞募']],
+'命门':[['肾俞','温阳','温补肾阳'],['关元','培元','培补命门']],
+'气海':[['关元','元气','大补元气'],['足三里','保健','强壮要穴']],
+'天突':[['膻中','降气','降气化痰'],['列缺','止咳','止咳平喘']],
+'水沟':[['百会','醒脑','醒神开窍']],
+'中极':[['三阴交','淋证','利尿通淋'],['膀胱俞','俞募配','膀胱俞募']],
+'期门':[['太冲','疏肝','疏肝理气'],['肝俞','俞募配','肝之俞募']],
+'章门':[['脾俞','俞募配','脾之俞募']]
+};
+
+/* ── 病证处方库 ── */
+const RXDB=[
+{cat:'内科',name:'感冒（风寒）',note:'祛风散寒解表，灸大椎',pts:'风池 合谷 列缺 大椎'},
+{cat:'内科',name:'咳嗽',note:'宣肺止咳化痰',pts:'肺俞 尺泽 列缺 合谷'},
+{cat:'内科',name:'哮喘',note:'止咳平喘，标本兼顾',pts:'肺俞 膻中 天突 尺泽 肾俞'},
+{cat:'内科',name:'失眠',note:'宁心安神，交通心肾',pts:'神门 三阴交 心俞 内关'},
+{cat:'内科',name:'心悸',note:'宁心定悸',pts:'内关 神门 心俞 厥阴俞'},
+{cat:'内科',name:'胃痛',note:'和胃止痛，梁丘主急性',pts:'中脘 足三里 内关 梁丘'},
+{cat:'内科',name:'呕吐',note:'和胃降逆止呕',pts:'中脘 内关 足三里'},
+{cat:'内科',name:'呃逆',note:'降气止呃，攒竹可指压',pts:'攒竹 内关 膻中 天突'},
+{cat:'内科',name:'泄泻',note:'健脾化湿止泻',pts:'天枢 足三里 阴陵泉 上巨虚'},
+{cat:'内科',name:'便秘',note:'通腑导滞',pts:'天枢 支沟 上巨虚 大肠俞'},
+{cat:'内科',name:'眩晕',note:'平肝熄风滋肾',pts:'风池 百会 太冲 太溪'},
+{cat:'内科',name:'面瘫',note:'祛风通络，初期浅刺',pts:'阳白 四白 地仓 颊车 翳风 合谷'},
+{cat:'内科',name:'中风后遗症',note:'疏通经络，调气活血',pts:'百会 肩髃 环跳 足三里 阳陵泉'},
+{cat:'内科',name:'水肿',note:'健脾温肾利水',pts:'阴陵泉 水分 关元 脾俞 肾俞'},
+{cat:'内科',name:'消渴（辅助）',note:'三消分治，培本为主',pts:'肺俞 脾俞 肾俞 太溪 三阴交'},
+{cat:'内科',name:'高血压（辅助）',note:'平肝潜阳',pts:'曲池 太冲 风池 三阴交'},
+{cat:'痛证',name:'前额头痛',note:'阳明头痛，循经取穴',pts:'头维 合谷 内庭'},
+{cat:'痛证',name:'偏头痛',note:'少阳头痛，率谷透角孙',pts:'风池 率谷 外关 足临泣'},
+{cat:'痛证',name:'后头痛',note:'太阳头痛',pts:'天柱 后溪 昆仑'},
+{cat:'痛证',name:'巅顶头痛',note:'厥阴头痛',pts:'百会 太冲 内关'},
+{cat:'痛证',name:'落枕',note:'舒筋活络，活动颈部行针',pts:'天柱 后溪 悬钟 外关'},
+{cat:'痛证',name:'颈椎病',note:'通经止痛',pts:'风池 天柱 大椎 后溪'},
+{cat:'痛证',name:'肩周炎',note:'条口透承山经验效穴',pts:'肩髃 肩髎 肩贞 阳陵泉 条口'},
+{cat:'痛证',name:'急性腰痛',note:'腰背委中求，后溪通督',pts:'委中 后溪 肾俞'},
+{cat:'痛证',name:'慢性腰痛',note:'补肾强腰',pts:'肾俞 大肠俞 委中 太溪'},
+{cat:'痛证',name:'坐骨神经痛',note:'循经取穴，少阳太阳并调',pts:'环跳 殷门 委中 阳陵泉 昆仑'},
+{cat:'痛证',name:'膝关节痛',note:'通利关节',pts:'犊鼻 足三里 梁丘 阳陵泉 血海'},
+{cat:'痛证',name:'踝关节扭伤',note:'活血消肿，急性期冷敷后针刺',pts:'昆仑 丘墟 商丘 解溪 阳陵泉'},
+{cat:'外科',name:'荨麻疹',note:'祛风凉血止痒',pts:'曲池 血海 膈俞 三阴交 风市'},
+{cat:'外科',name:'痤疮',note:'清肺胃热凉血',pts:'曲池 合谷 血海 三阴交'},
+{cat:'外科',name:'痔疮',note:'长强穴至关重要',pts:'长强 承山 次髎'},
+{cat:'妇科',name:'月经不调',note:'调经统血',pts:'关元 气海 三阴交 血海'},
+{cat:'妇科',name:'痛经',note:'经期前取效更佳，灸关元',pts:'关元 三阴交 地机 次髎'},
+{cat:'妇科',name:'带下',note:'健脾利湿止带',pts:'带脉 关元 三阴交 阴陵泉'},
+{cat:'妇科',name:'胎位不正',note:'艾灸至阴，孕妇慎刺',pts:'至阴'},
+{cat:'妇科',name:'缺乳',note:'通乳要穴，少泽点刺',pts:'膻中 少泽 乳根'},
+{cat:'五官',name:'目赤肿痛',note:'清肝明目',pts:'睛明 攒竹 合谷 太冲'},
+{cat:'五官',name:'耳鸣耳聋',note:'暴聋泻之，久聋补肾',pts:'听宫 翳风 中渚 太溪'},
+{cat:'五官',name:'鼻渊（鼻炎）',note:'通利鼻窍',pts:'迎香 合谷 列缺 肺俞'},
+{cat:'五官',name:'牙痛',note:'实证泻胃火，虚证滋肾水',pts:'合谷 颊车 下关 内庭'},
+{cat:'五官',name:'咽喉肿痛',note:'少商点刺放血',pts:'少商 尺泽 合谷 照海'},
+{cat:'急救',name:'晕厥',note:'醒神开窍回苏',pts:'水沟 涌泉 百会 内关'},
+{cat:'急救',name:'中暑',note:'开窍泄热',pts:'水沟 大椎 曲池 委中'}
+];
+
+/* ── AI 知识：症状同义词 → 规范病名 ── */
+const SYN={'头疼':'头痛','偏头疼':'偏头痛','睡不着':'失眠','睡不好':'失眠','睡眠不好':'失眠','失眠多梦':'失眠',
+'肚子疼':'胃痛','肚子痛':'胃痛','胃疼':'胃痛','拉肚子':'泄泻','腹泻':'泄泻','大便干':'便秘','排便困难':'便秘',
+'鼻子不通':'鼻渊','鼻塞':'鼻渊','鼻炎':'鼻渊','流鼻涕':'鼻渊','过敏':'荨麻疹','皮肤痒':'荨麻疹','起疹子':'荨麻疹','风疹块':'荨麻疹',
+'牙疼':'牙痛','牙齿痛':'牙痛','耳朵响':'耳鸣耳聋','耳聋':'耳鸣耳聋','头晕':'眩晕','头晕目眩':'眩晕',
+'脖子疼':'颈椎病','脖子僵':'颈椎病','颈肩不适':'颈椎病','肩膀疼':'肩周炎','肩膀抬不起来':'肩周炎','肩痛':'肩周炎',
+'腰疼':'腰痛','腰酸':'腰痛','腰突':'坐骨神经痛','腿疼':'坐骨神经痛','腿麻':'坐骨神经痛',
+'崴脚':'踝关节扭伤','脚踝疼':'踝关节扭伤','膝盖疼':'膝关节痛','膝关节不适':'膝关节痛',
+'痛经':'痛经','月经不准':'月经不调','姨妈疼':'痛经','经期腹痛':'痛经',
+'长痘':'痤疮','痘痘':'痤疮','脸上长痘':'痤疮','青春痘':'痤疮',
+'中风偏瘫':'中风后遗症','半身不遂':'中风后遗症','面神经炎':'面瘫','口眼歪斜':'面瘫',
+'晕倒':'晕厥','昏迷':'晕厥','发痧':'中暑','打嗝':'呃逆','打嗝不止':'呃逆','恶心':'呕吐','想吐':'呕吐',
+'高血压':'高血压','血压高':'高血压','血糖高':'消渴（辅助）','糖尿病':'消渴（辅助）',
+'眼睛红':'目赤肿痛','眼睛疼':'目赤肿痛','眼干':'目赤肿痛','喉咙痛':'咽喉肿痛','嗓子疼':'咽喉肿痛','嗓子干':'咽喉肿痛'};
+const MBRIEF={LU:'主治咳喘、咽喉病及本经所过肢体病',LI:'主治头面五官病、热病及本经所过病',
+ST:'主治胃肠病、头面五官病、热病及下肢前侧病',SP:'主治脾胃病、妇科病、前阴病及血证',
+HT:'主治心胸病、神志病及本经所过病',SI:'主治头项强痛、五官病、热病及本经所过病',
+BL:'主治头项背腰下肢病、脏腑病及神志病',KI:'主治妇科病、前阴病、肾脏病及咽喉病',
+PC:'主治心胸病、胃病、神志病及本经所过病',TE:'主治头耳目病、热病及胁肋病',
+GB:'主治肝胆病、头目病及本经所过病',LR:'主治肝病、妇科病、前阴病及本经所过病',
+CV:'主治局部病及相应脏腑病，有回阳固脱之功',GV:'主治神志病、热病、腰骶背项病及回阳固脱'};
+const ADVICE={
+'内科':'规律作息、饮食清淡；症状持续数日不缓解或加重请及时就医。',
+'痛证':'急性期注意休息制动，慢性期可配合热敷与功能锻炼；疼痛剧烈或持续请就医排查。',
+'外科':'避免搔抓刺激，忌辛辣发物；皮损广泛或伴发热请就医。',
+'妇科':'注意保暖与情绪调摄；月经异常持续或伴其他症状请就医排查。',
+'五官':'注意局部卫生，避免辛辣刺激；症状持续请专科就诊。',
+'急救':'⚠️ 急救穴位仅用于现场应急，须同时呼叫急救并尽快送医！'};
+const DEFAULT_CHIPS=['我头痛','最近失眠','胃痛怎么缓解','便秘','感冒鼻塞','颈椎不舒服','足三里有什么用','现在什么时辰当令'];
+
+/* ── 国标定位（GB/T 12346 骨度分寸表述，要穴）── */
+const LOC={
+'中府':'胸前外上方，前正中线旁开6寸，平第1肋间隙','云门':'锁骨下窝凹陷中，前正中线旁开6寸',
+'尺泽':'肘横纹上，肱二头肌腱桡侧凹陷处','孔最':'前臂前区，腕掌侧远端横纹上7寸',
+'列缺':'腕掌侧远端横纹上1.5寸，拇短伸肌腱与拇长展肌腱之间','经渠':'腕掌侧远端横纹上1寸，桡骨茎突与桡动脉之间',
+'太渊':'腕掌侧远端横纹桡侧，桡动脉搏动处','鱼际':'第1掌骨桡侧中点赤白肉际处','少商':'拇指末节桡侧，指甲根角侧上方0.1寸',
+'商阳':'食指末节桡侧，指甲根角侧上方0.1寸','合谷':'手背第1、2掌骨间，第2掌骨桡侧中点处',
+'阳溪':'腕背侧远端横纹桡侧，拇短伸肌腱与拇长展肌腱之间','偏历':'前臂后区，腕背侧远端横纹上3寸',
+'温溜':'前臂后区，腕背侧远端横纹上5寸','手三里':'阳溪与曲池连线上，肘横纹下2寸',
+'曲池':'尺泽与肱骨外上髁连线中点凹陷处','肩髃':'臂外展，肩峰前下方凹陷处','迎香':'鼻翼外缘中点旁，鼻唇沟中',
+'承泣':'眼球与眶下缘之间，瞳孔直下','四白':'眶下孔处，瞳孔直下','地仓':'口角旁开0.4寸',
+'颊车':'下颌角前上方一横指，咬肌隆起处','下关':'颧弓下缘中央凹陷处','头维':'额角发际直上0.5寸，头正中线旁开4.5寸',
+'天枢':'脐中旁开2寸','气冲':'耻骨联合上缘中点旁开2寸','梁丘':'髌骨外上缘上2寸','犊鼻':'髌韧带外侧凹陷中',
+'足三里':'犊鼻下3寸，胫骨前嵴外一横指','上巨虚':'犊鼻下6寸','条口':'犊鼻下8寸',
+'丰隆':'外踝尖上8寸，胫骨前嵴外二横指','解溪':'踝横纹中央，两肌腱之间','冲阳':'足背最高处，动脉搏动处',
+'内庭':'足背第2、3趾间，趾蹼缘上方赤白肉际','厉兑':'第2趾末节外侧，趾甲根角上方0.1寸',
+'隐白':'足大趾末节内侧，趾甲根角上方0.1寸','太白':'第1跖趾关节近端赤白肉际凹陷',
+'公孙':'第1跖骨基底部前下缘赤白肉际处','三阴交':'内踝尖上3寸，胫骨内侧缘后际',
+'地机':'阴陵泉下3寸','阴陵泉':'胫骨内侧髁下缘凹陷处','血海':'髌骨内上缘上2寸','大横':'脐中旁开4寸','大包':'腋中线上，第6肋间隙',
+'极泉':'腋窝中央，腋动脉搏动处','少海':'屈肘，肘横纹内侧端与肱骨内上髁连线中点',
+'神门':'腕掌侧远端横纹尺侧端，尺侧腕屈肌腱桡侧缘','少冲':'小指末节桡侧，指甲根角上方0.1寸',
+'少泽':'小指末节尺侧，指甲根角上方0.1寸','后溪':'第5掌指关节尺侧近端赤白肉际凹陷',
+'腕骨':'第5掌骨基底与钩骨之间赤白肉际凹陷','养老':'掌心向胸时，尺骨小头桡侧凹陷',
+'天宗':'肩胛冈中点与肩胛骨下角连线上1/3交点','颧髎':'目外眦直下，颧骨凹陷处','听宫':'耳屏正中与下颌骨髁突之间凹陷',
+'睛明':'目内眦外上方，眶内侧壁凹陷中','攒竹':'眉头凹陷中','天柱':'横平第2颈椎棘突上际，斜方肌外缘凹陷',
+'肺俞':'第3胸椎棘突下，后正中线旁开1.5寸','膏肓':'第4胸椎棘突下，后正中线旁开3寸','心俞':'第5胸椎棘突下，旁开1.5寸',
+'膈俞':'第7胸椎棘突下，旁开1.5寸','肝俞':'第9胸椎棘突下，旁开1.5寸','脾俞':'第11胸椎棘突下，旁开1.5寸',
+'胃俞':'第12胸椎棘突下，旁开1.5寸','肾俞':'第2腰椎棘突下，旁开1.5寸','大肠俞':'第4腰椎棘突下，旁开1.5寸',
+'委中':'腘横纹中点','承山':'腓肠肌两肌腹与肌腱交角处','昆仑':'外踝尖与跟腱之间凹陷中',
+'申脉':'外踝直下方凹陷中','至阴':'足小趾末节外侧，趾甲根角上方0.1寸',
+'涌泉':'足底，屈足卷趾时足心最凹陷处','然谷':'足舟骨粗隆下方赤白肉际处','太溪':'内踝尖与跟腱之间凹陷处',
+'照海':'内踝尖直下1寸凹陷中','复溜':'太溪直上2寸，跟腱前缘',
+'内关':'腕掌侧远端横纹上2寸，掌长肌腱与桡侧腕屈肌腱之间','大陵':'腕掌侧远端横纹中点，两肌腱之间',
+'劳宫':'掌心，第2、3掌骨之间偏于第3掌骨','中冲':'中指末端最高点',
+'关冲':'无名指末节尺侧，指甲根角上方0.1寸','中渚':'第4、5掌骨间，掌指关节近端凹陷','阳池':'腕背侧远端横纹中点',
+'外关':'腕背侧远端横纹上2寸，尺桡骨之间','支沟':'腕背侧远端横纹上3寸，尺桡骨之间',
+'翳风':'耳垂后方，乳突下端前方凹陷中','丝竹空':'眉梢凹陷处',
+'瞳子髎':'目外眦外侧0.5寸凹陷中','听会':'耳屏间切迹与下颌骨髁突之间凹陷','阳白':'瞳孔直上，眉上1寸',
+'风池':'枕骨下，斜方肌与胸锁乳突肌上端之间凹陷','肩井':'第7颈椎棘突与肩峰最外侧点连线中点',
+'环跳':'股骨大转子与骶管裂孔连线外1/3与内2/3交点','风市':'髌底上7寸，直立垂手中指尖处',
+'阳陵泉':'腓骨头前下方凹陷处','光明':'外踝尖上5寸，腓骨前缘','悬钟':'外踝尖上3寸，腓骨前缘',
+'丘墟':'外踝前下方，趾长伸肌腱外侧凹陷','足临泣':'第4、5跖骨底结合部前方凹陷','足窍阴':'第4趾末节外侧，趾甲根角上方0.1寸',
+'大敦':'足大趾末节外侧，趾甲根角上方0.1寸','行间':'第1、2趾间，趾蹼缘上方赤白肉际',
+'太冲':'第1、2跖骨间，跖骨结合部前方凹陷','中封':'内踝前1寸，胫骨前肌腱内侧缘','蠡沟':'内踝尖上5寸，胫骨内侧面中央',
+'章门':'第11肋骨游离端下方','期门':'第6肋间隙，前正中线旁开4寸',
+'中极':'前正中线上，脐中下4寸','关元':'前正中线上，脐中下3寸','气海':'前正中线上，脐中下1.5寸','神阙':'脐中',
+'中脘':'前正中线上，脐中上4寸','膻中':'前正中线上，平第4肋间隙（两乳头连线中点）','天突':'胸骨上窝中央',
+'廉泉':'喉结上方，舌骨上缘凹陷中','承浆':'颏唇沟正中凹陷处',
+'长强':'尾骨端与肛门连线中点','腰阳关':'后正中线上，第4腰椎棘突下','命门':'后正中线上，第2腰椎棘突下',
+'大椎':'后正中线上，第7颈椎棘突下','风府':'枕外隆凸直下，两侧斜方肌之间凹陷','百会':'前发际正中直上7寸，两耳尖连线中点',
+'水沟':'人中沟上1/3与下2/3交点处'
+};
+
+/* ── 特定穴穴性 ── */
+const SPEC={
+LU:{'少商':'井穴','鱼际':'荥穴','太渊':'输穴·原穴·脉会','经渠':'经穴','尺泽':'合穴','列缺':'络穴·通任脉·八脉交会','孔最':'郄穴','中府':'肺之募穴'},
+LI:{'商阳':'井穴','二间':'荥穴','三间':'输穴','阳溪':'经穴','曲池':'合穴','合谷':'原穴','偏历':'络穴','温溜':'郄穴'},
+ST:{'厉兑':'井穴','内庭':'荥穴','陷谷':'输穴','解溪':'经穴','足三里':'合穴','冲阳':'原穴','丰隆':'络穴','梁丘':'郄穴','天枢':'大肠之募'},
+SP:{'隐白':'井穴','大都':'荥穴','太白':'输穴·原穴','商丘':'经穴','阴陵泉':'合穴','公孙':'络穴·通冲脉·八脉交会','地机':'郄穴'},
+HT:{'少冲':'井穴','少府':'荥穴','神门':'输穴·原穴','灵道':'经穴','少海':'合穴','通里':'络穴','阴郄':'郄穴'},
+SI:{'少泽':'井穴','前谷':'荥穴','后溪':'输穴·通督脉·八脉交会','阳谷':'经穴','小海':'合穴','腕骨':'原穴','支正':'络穴','养老':'郄穴'},
+BL:{'至阴':'井穴','足通谷':'荥穴','束骨':'输穴','昆仑':'经穴','委中':'合穴','京骨':'原穴','飞扬':'络穴','金门':'郄穴','申脉':'八脉交会·通阳跷','大杼':'骨会','膈俞':'血会','肺俞':'背俞·肺','厥阴俞':'背俞·心包','心俞':'背俞·心','肝俞':'背俞·肝','胆俞':'背俞·胆','脾俞':'背俞·脾','胃俞':'背俞·胃','三焦俞':'背俞·三焦','肾俞':'背俞·肾','大肠俞':'背俞·大肠','小肠俞':'背俞·小肠','膀胱俞':'背俞·膀胱'},
+KI:{'涌泉':'井穴','然谷':'荥穴','太溪':'输穴·原穴','复溜':'经穴','阴谷':'合穴','大钟':'络穴','水泉':'郄穴','照海':'八脉交会·通阴跷'},
+PC:{'中冲':'井穴','劳宫':'荥穴','大陵':'输穴·原穴','间使':'经穴','曲泽':'合穴','内关':'络穴·通阴维·八脉交会','郄门':'郄穴'},
+TE:{'关冲':'井穴','液门':'荥穴','中渚':'输穴','支沟':'经穴','天井':'合穴','阳池':'原穴','外关':'络穴·通阳维·八脉交会','会宗':'郄穴'},
+GB:{'足窍阴':'井穴','侠溪':'荥穴','足临泣':'输穴·通带脉·八脉交会','阳辅':'经穴','阳陵泉':'合穴·筋会','丘墟':'原穴','光明':'络穴','外丘':'郄穴','日月':'胆之募','京门':'肾之募'},
+LR:{'大敦':'井穴','行间':'荥穴','太冲':'输穴·原穴','中封':'经穴','曲泉':'合穴','蠡沟':'络穴','中都':'郄穴','期门':'肝之募','章门':'脾之募·脏会'},
+CV:{'中极':'膀胱之募','关元':'小肠之募','膻中':'气会·心包募','中脘':'腑会·胃募','石门':'三焦之募','巨阙':'心之募'},
+GV:{'大椎':'诸阳之会','百会':'三阳五会','命门':'培元温阳'}
+};
+Object.assign(SPEC,{
+ CH:{'气冲':'冲脉所起'},
+ DAI:{'带脉':'带脉交会','五枢':'带脉交会','维道':'带脉交会'},
+ YINW:{'筑宾':'阴维之郄','期门':'阴维交会','天突':'阴维交会','廉泉':'阴维交会'},
+ YANGW:{'金门':'阳维之郄','阳交':'阳维之郄','风池':'阳维交会','哑门':'阳维交会','脑户':'阳维交会','本神':'阳维交会'},
+ YINQ:{'照海':'八脉交会·通阴跷','交信':'阴跷之郄'},
+ YANGQ:{'申脉':'八脉交会·通阳跷','跗阳':'阳跷之郄'}
+});
+
+/* ── 主治提要 ── */
+const NOTE={
+'中府':'宣肺理气，止咳平喘','尺泽':'清泻肺热，止咳平喘','列缺':'"头项寻列缺"；配照海主肺系咽喉','太渊':'止咳化痰，脉之会','少商':'咽喉肿痛，点刺放血',
+'合谷':'镇痛要穴，"面口合谷收"','曲池':'清热要穴，治疹降压','肩髃':'肩臂不遂，上肢要穴','迎香':'通利鼻窍','天枢':'便秘腹泻，双向调节',
+'足三里':'保健要穴，"肚腹三里留"','丰隆':'化痰要穴','内庭':'清胃火，牙痛口臭','梁丘':'急性胃痛','头维':'偏头痛','颊车':'牙痛面瘫','下关':'牙关不利','承泣':'眼病要穴','四白':'面瘫眼疾',
+'隐白':'崩漏止血','三阴交':'足三阴交会，妇科要穴','阴陵泉':'利湿要穴','血海':'治血要穴，皮肤瘙痒','地机':'痛经要穴','大包':'脾之大络',
+'神门':'宁心安神，失眠要穴','通里':'心悸舌强','极泉':'心痛胁痛',
+'后溪':'"后溪专治督脉病"；配申脉主颈项目内眦','天宗':'肩胛背痛','听宫':'耳聋耳鸣','养老':'目昏，急性腰痛',
+'睛明':'眼病要穴，阴阳跷交会','攒竹':'眼疾呃逆','肺俞':'宣肺治咳喘','心俞':'宁心治失眠','膈俞':'血之会','肝俞':'疏肝利胆','脾俞':'健脾化湿','肾俞':'补肾要穴','膏肓':'补虚治劳嗽','委中':'"腰背委中求"','承山':'腿痛转筋，痔疮','昆仑':'项强头痛','申脉':'祛风安眠；配后溪主颈项肩耳','至阴':'艾灸矫正胎位','承扶':'腰腿痔疾',
+'涌泉':'急救要穴，引火归元','太溪':'滋肾阴，眩晕耳鸣','照海':'咽干失眠；配列缺主肺系咽喉胸膈','复溜':'调汗要穴','然谷':'滋阴清热',
+'内关':'"内关心胸胃"，止呕宁心；配公孙主心胸胃','大陵':'宁心安神','劳宫':'清心火口疮','中冲':'中暑急救','天池':'宽胸理气',
+'外关':'解表清热，通阳维；配足临泣主目锐眦耳后','支沟':'便秘要穴','翳风':'耳疾面瘫','丝竹空':'偏正头痛',
+'风池':'祛风要穴，头痛眩晕','肩井':'肩颈强痛','环跳':'坐骨神经痛要穴','风市':'风疹瘙痒','阳陵泉':'筋之会','悬钟':'髓之会，健脑','瞳子髎':'眼病偏头痛','足临泣':'配外关主目锐眦、耳后、颈肩',
+'大敦':'疝气遗尿','行间':'清泻肝火','太冲':'疏肝要穴，配合谷为"四关"','期门':'疏肝解郁','章门':'脏之会',
+'长强':'痔疾要穴','命门':'温肾壮阳','大椎':'退热要穴','百会':'升阳举陷，醒脑开窍','风府':'祛风醒脑','水沟':'急救醒脑（人中）',
+'中极':'利尿通淋','关元':'培元固本，保健要穴','气海':'补气要穴','神阙':'温阳救逆','中脘':'胃病要穴','膻中':'宽胸理气','天突':'降气止咳','廉泉':'舌强语謇','承浆':'面瘫齿痛','鸠尾':'宁心安神',
+'带脉':'束带一周，调经止带','五枢':'带脉交会，少腹痛','维道':'带脉交会','气冲':'冲脉所起，疝气腹痛',
+'筑宾':'阴维之郄','金门':'阳维之郄','阳交':'阳维之郄，惊狂心痛','交信':'阴跷之郄','跗阳':'阳跷之郄','仆参':'足跟痛','居髎':'腰腿髀枢痛'
+};
+
+/* ── 流注衔接 ── */
+const CONN=[['LR','期门','LU','中府'],['LU','少商','LI','商阳'],['LI','迎香','ST','承泣'],
+['ST','厉兑','SP','隐白'],['SP','大包','HT','极泉'],['HT','少冲','SI','少泽'],
+['SI','听宫','BL','睛明'],['BL','至阴','KI','涌泉'],['KI','俞府','PC','天池'],
+['PC','中冲','TE','关冲'],['TE','丝竹空','GB','瞳子髎'],['GB','足窍阴','LR','大敦']];
+const CIRC_EXTRA=[['GV','龈交','CV','承浆'],['CV','会阴','GV','长强']];
+let QIAO_LINKS=[],JMING=null;
+
+const ORDER=['LU','LI','ST','SP','HT','SI','BL','KI','PC','TE','GB','LR'];
+const HOUR={LU:['寅','03:00–05:00'],LI:['卯','05:00–07:00'],ST:['辰','07:00–09:00'],SP:['巳','09:00–11:00'],
+HT:['午','11:00–13:00'],SI:['未','13:00–15:00'],BL:['申','15:00–17:00'],KI:['酉','17:00–19:00'],
+PC:['戌','19:00–21:00'],TE:['亥','21:00–23:00'],GB:['子','23:00–01:00'],LR:['丑','01:00–03:00']};
+
+const VBOX={x1:-340,y1:0,x2:1860,y2:1760};
+const CBOX={x1:2650,y1:-140,x2:4440,y2:1830};
+const ALLBOX={x1:-380,y1:-170,x2:4470,y2:1850};
+
+/* ================= 数据构建 ================= */
+const mers=[],nodes=[],chains=[];
+const nodeIdx={};
+
+function parsePts(s){return s.split(';').map(t=>{const f=t.trim().split(/\s+/);
+  return {n:f[0],x:+f[1],y:+f[2],v:f[3]||null};});}
+
+/* wp 保留穴名 n（人体图穴名显示的关键） */
+function wp(p,m,side){const vx=VIEWS[p.v||m.view];
+  return {n:p.n,x:vx+p.x*side,y:p.y,v:p.v||m.view};}
+
+function makeSegs(pts){const segs=[];
+  for(let i=0;i<pts.length-1;i++){const a=pts[i],b=pts[i+1];
+    if(a.v!==b.v){
+      const mx=(a.x+b.x)/2,my=(a.y+b.y)/2,d=Math.hypot(b.x-a.x,b.y-a.y);
+      const c={x:mx,y:my-Math.max(120,d*0.16)};
+      let len=0,prev=a;for(let k=1;k<=8;k++){const t=k/8,q=qbez(a,c,b,t);len+=Math.hypot(q.x-prev.x,q.y-prev.y);prev=q;}
+      segs.push({a,b,c,len,q:true});
+    }else{
+      segs.push({a,b,len:Math.hypot(b.x-a.x,b.y-a.y)});
+    }}
+  return segs;}
+function qbez(a,c,b,t){const u=1-t;
+  return {x:u*u*a.x+2*u*t*c.x+t*t*b.x,y:u*u*a.y+2*u*t*c.y+t*t*b.y};}
+
+function buildChain(m,side,pts,branch){
+  const ch={mer:m,side,pts,segs:makeSegs(pts),branch:!!branch,total:0,bbox:null};
+  ch.total=ch.segs.reduce((s,g)=>s+g.len,0);
+  let x1=1e9,y1=1e9,x2=-1e9,y2=-1e9;
+  for(const p of pts){x1=Math.min(x1,p.x);y1=Math.min(y1,p.y);x2=Math.max(x2,p.x);y2=Math.max(y2,p.y);}
+  ch.bbox={x1,y1,x2,y2};
+  ch.parts=[];const n=Math.max(2,Math.round(ch.total/165));
+  for(let i=0;i<n;i++)ch.parts.push({d:ch.total*i/n,v:85+Math.random()*45});
+  chains.push(ch);return ch;}
+
+function addNode(m,ch,p,i,side){
+  const tag=(SPEC[m.id]||{})[p.n]||null;
+  const lvl=tag?(/[会募]/.test(tag)?2:1):(NOTE[p.n]?1:0);
+  const nd={x:p.x,y:p.y,name:p.n,mer:m,chain:ch,pi:i,side,v:p.v,lvl,tag,wux:wuxOf(m,p.n)};
+  nodes.push(nd);(nodeIdx[p.n]=nodeIdx[p.n]||[]).push(nd);return nd;}
+
+function buildData(){
+  for(const id in D){
+    const m=D[id];m.id=id;m.on=true;
+    const pts=parsePts(m.pts);
+    const dual=pts.some(p=>Math.abs(p.x)>0.5);
+    const sides=dual?[1,-1]:[0];
+    m.chains=[];
+    for(const s of sides){
+      const wpts=pts.map(p=>wp(p,m,s));
+      const ch=buildChain(m,s,wpts,false);m.chains.push(ch);
+      /* 双侧都创建节点 */
+      pts.forEach((p,i)=>addNode(m,ch,wpts[i],i,s));
+      if(m.branch){
+        const main=wpts,from=pts.findIndex(p=>p.n===m.branch.from),to=pts.findIndex(p=>p.n===m.branch.to);
+        const bpts=parsePts(m.branch.pts).map(p=>wp(p,m,s));
+        const all=[main[from],...bpts,main[to]];
+        const bch=buildChain(m,s,all,true);m.chains.push(bch);
+        bpts.forEach((p,i)=>addNode(m,bch,p,i,s));
+      }
+    }
+    mers.push(m);
+  }
+}
+
+/* ================= 圆环图构建 ================= */
+function finishCircChain(mer,pts,path,style){
+  const ch={mer,pts,path,circ:true,style,segs:[],total:0,bbox:null,parts:[],gap:0};
+  for(let i=0;i<path.length-1;i++){
+    const a=path[i],b=path[i+1];
+    ch.segs.push({a,b,len:Math.hypot(b.x-a.x,b.y-a.y)});}
+  ch.total=ch.segs.reduce((s,g)=>s+g.len,0);
+  let x1=1e9,y1=1e9,x2=-1e9,y2=-1e9;
+  for(const p of path){x1=Math.min(x1,p.x);y1=Math.min(y1,p.y);x2=Math.max(x2,p.x);y2=Math.max(y2,p.y);}
+  ch.bbox={x1,y1,x2,y2};
+  ch.gap=pts.length>1?ch.total*0.9/(pts.length-1):0;
+  const n=Math.max(2,Math.round(ch.total/((style&&style.pden)||165)));
+  for(let i=0;i<n;i++)ch.parts.push({d:ch.total*i/n,v:70+Math.random()*40});
+  chains.push(ch);mer.chains.push(ch);return ch;}
+
+function arcChain(mer,r,a0,a1,names,style,pads,fracs){
+  const pp=pads?pads[0]:0.02,np=pads?pads[1]:0.07;
+  const A0=a0+(a1-a0)*pp,A1=a1-(a1-a0)*pp;
+  const pts=names.map((nm,i)=>{
+    const f=fracs?fracs[i]:np+(1-2*np)*(names.length===1?0.5:i/(names.length-1));
+    const a=A0+(A1-A0)*f;
+    return {n:nm,x:CIR.x+r*Math.cos(a),y:CIR.y+r*Math.sin(a)};});
+  const N=Math.max(10,Math.ceil(Math.abs(A1-A0)*r/7));
+  const path=[];
+  for(let k=0;k<=N;k++){const a=A0+(A1-A0)*k/N;
+    path.push({x:CIR.x+r*Math.cos(a),y:CIR.y+r*Math.sin(a)});}
+  return finishCircChain(mer,pts,path,style);}
+
+function addCircNode(m,ch,p,i){
+  const tag=(SPEC[m.id]||{})[p.n]||null;
+  const lvl=tag?(/[会募郄交起]/.test(tag)?2:1):(NOTE[p.n]?1:0);
+  const nd={x:p.x,y:p.y,name:p.n,mer:m,chain:ch,pi:i,side:0,v:'C',circ:true,lvl,tag,wux:wuxOf(m,p.n)};
+  nodes.push(nd);(nodeIdx[p.n]=nodeIdx[p.n]||[]).push(nd);return nd;}
+
+const namesOf=m=>m.pts.split(';').map(s=>s.trim().split(/\s+/)[0]);
+
+function buildCircle(){
+  for(const id in D2){const m=D2[id];m.id=id;m.on=true;m.circOnly=true;m.chains=[];mers.push(m);}
+  ZI.forEach((z,i)=>{
+    const m=D[z[1]];
+    const names=namesOf(m);
+    if(m.branch){const bi=names.indexOf(m.branch.from);
+      names.splice(bi+1,0,...m.branch.pts.split(';').map(s=>s.trim().split(/\s+/)[0]));}
+    const ch=arcChain(m,R_M,ziAng(i),ziAng(i)+Math.PI/6,names,{w:2.6,pden:150},[0.006,0.07]);
+    ch.pts.forEach((p,k)=>addCircNode(m,ch,p,k));
+  });
+  const cvNames=namesOf(D.CV).slice().reverse();
+  const gvNames=namesOf(D.GV);
+  const chCV=arcChain(D.CV,R_RD,-Math.PI/2+0.012,Math.PI/2-0.012,cvNames,{w:3,pden:130},[0.012,0.028]);
+  chCV.pts.forEach((p,k)=>addCircNode(D.CV,chCV,p,k));
+  const chGV=arcChain(D.GV,R_RD,Math.PI/2+0.012,Math.PI*1.5-0.012,gvNames,{w:3,pden:130},[0.012,0.028]);
+  chGV.pts.forEach((p,k)=>addCircNode(D.GV,chGV,p,k));
+  const chDAI=arcChain(D2.DAI,R_DAI,-Math.PI/2,Math.PI*1.5,D2.DAI.line.split(' '),
+    {w:2.2,dash:[16,10],pden:180},[0.004,0],[0.07,0.105,0.14]);
+  chDAI.pts.forEach((p,k)=>addCircNode(D2.DAI,chDAI,p,k));
+  const chYW=arcChain(D2.YINW,R_W,Math.PI/2+0.05,Math.PI*1.5-0.05,D2.YINW.line.split(' '),
+    {w:1.7,pden:170},[0.02,0.05]);
+  chYW.pts.forEach((p,k)=>addCircNode(D2.YINW,chYW,p,k));
+  const chAW=arcChain(D2.YANGW,R_W,Math.PI/2-0.05,-Math.PI/2+0.05,D2.YANGW.line.split(' '),
+    {w:1.7,pden:170},[0.02,0.05]);
+  chAW.pts.forEach((p,k)=>addCircNode(D2.YANGW,chAW,p,k));
+  const nsQ1=arcChain(D2.YINQ,R_Q,Math.PI/2+0.05,Math.PI*1.5-0.05,D2.YINQ.line.split(' '),
+    {w:1.7,pden:170},[0.02,0.05]).pts.map((p,k)=>addCircNode(D2.YINQ,null,p,k));
+  const nsQ2=arcChain(D2.YANGQ,R_Q,Math.PI/2-0.05,-Math.PI/2+0.05,D2.YANGQ.line.split(' '),
+    {w:1.7,pden:170},[0.02,0.05]).pts.map((p,k)=>addCircNode(D2.YANGQ,null,p,k));
+  JMING={x:CIR.x,y:CIR.y-R_Q-18,name:'睛明',mer:D2.YINQ,chain:null,pi:0,side:0,v:'C',circ:true,
+    lvl:2,tag:'阴阳跷交会',wux:null};
+  nodes.push(JMING);(nodeIdx['睛明']=nodeIdx['睛明']||[]).push(JMING);
+  QIAO_LINKS=[[nsQ1[nsQ1.length-1],JMING],[nsQ2[nsQ2.length-1],JMING]];
+  {
+    const m=D2.CH,names=m.line.split(' ');
+    const pts=names.map((nm,i)=>({n:nm,x:CIR.x,y:CIR.y+545-i*31}));
+    const path=[];for(let y=CIR.y+560;y>=CIR.y+90;y-=8)path.push({x:CIR.x,y});
+    const ch=finishCircChain(m,pts,path,{w:5,alpha:.5,core:true,pden:110});
+    pts.forEach((p,i)=>addCircNode(m,ch,p,i));
+  }
+}
+function circNode(merId,name){
+  return (nodeIdx[name]||[]).find(n=>n.circ&&n.mer.id===merId);}
+
+/* ================= 相机 ================= */
+const cam={x:750,y:880,s:0.5},camT={x:750,y:880,s:0.5};
+const s2w=(sx,sy)=>({x:cam.x+(sx-W/2)/cam.s,y:cam.y+(sy-H/2)/cam.s});
+const w2s=(wx,wy)=>({x:(wx-cam.x)*cam.s+W/2,y:(wy-cam.y)*cam.s+H/2});
+function flyTo(x,y,s){camT.x=x;camT.y=y;camT.s=Math.min(8,Math.max(0.04,s));}
+function flyBox(b,fit){const w=b.x2-b.x1,h=b.y2-b.y1;
+  flyTo((b.x1+b.x2)/2,(b.y1+b.y2)/2,Math.min(W/(w+240),H/(h+240))*(fit||0.85));}
+function zoomAt(sx,sy,f){const w=s2w(sx,sy);cam.s=Math.min(8,Math.max(0.04,cam.s*f));
+  cam.x=w.x-(sx-W/2)/cam.s;cam.y=w.y-(sy-H/2)/cam.s;
+  camT.x=cam.x;camT.y=cam.y;camT.s=cam.s;}
+
+/* ================= 状态 ================= */
+/* nameMode: 0=关闭 1=要穴 2=全部（默认） */
+const st={hovPt:null,hovMer:null,selMer:null,selPt:null,region:'body',
+  nameMode:2,
+  showBody:true,showArrows:true,showConn:true,showFlow:true,
+  showBamaio:true,showWux:true,showLuo:true,showRx:false,rx:[],
+  dzCat:'全部',dzQ:'',dzOpen:null,
+  flow:{on:false,idx:0,t:0,dur:2.6},follow:true};
+
+function merAlpha(m){
+  if(st.flow.on){const cur=mers.find(x=>x.id===ORDER[st.flow.idx]);
+    return m===cur?1:0.07;}
+  if(st.selMer)return m===st.selMer?1:0.09;
+  if(st.hovMer)return m===st.hovMer?1:0.35;
+  return 0.8;}
+
+/* ================= 渲染 ================= */
+function posAt(ch,d){d=((d%ch.total)+ch.total)%ch.total;
+  for(const g of ch.segs){
+    if(d<=g.len){const t=d/g.len;
+      if(g.q){const p=qbez(g.a,g.c,g.b,t),p2=qbez(g.a,g.c,g.b,Math.min(1,t+0.02));
+        return {x:p.x,y:p.y,a:Math.atan2(p2.y-p.y,p2.x-p.x)};}
+      return {x:g.a.x+(g.b.x-g.a.x)*t,y:g.a.y+(g.b.y-g.a.y)*t,a:Math.atan2(g.b.y-g.a.y,g.b.x-g.a.x)};}
+    d-=g.len;}
+  const g=ch.segs[ch.segs.length-1];
+  return {x:g.b.x,y:g.b.y,a:0};}
+
+function drawGrid(){
+  const lv=[100,200,500,1000,2000,5000,10000];
+  let g=lv.find(v=>v*cam.s>=64)||10000;
+  const minor=g/5;
+  ctx.lineWidth=1;
+  if(minor*cam.s>16){
+    ctx.strokeStyle='rgba(110,150,220,0.05)';
+    ctx.beginPath();
+    for(let x=Math.floor(cam.x-W/2/cam.s/minor)*minor;x<cam.x+W/2/cam.s;x+=minor){
+      const sx=(x-cam.x)*cam.s+W/2;ctx.moveTo(sx,0);ctx.lineTo(sx,H);}
+    for(let y=Math.floor(cam.y-H/2/cam.s/minor)*minor;y<cam.y+H/2/cam.s;y+=minor){
+      const sy=(y-cam.y)*cam.s+H/2;ctx.moveTo(0,sy);ctx.lineTo(W,sy);}
+    ctx.stroke();}
+  ctx.strokeStyle='rgba(110,150,220,0.11)';
+  ctx.beginPath();
+  for(let x=Math.floor(cam.x-W/2/cam.s/g)*g;x<cam.x+W/2/cam.s;x+=g){
+    const sx=(x-cam.x)*cam.s+W/2;ctx.moveTo(sx,0);ctx.lineTo(sx,H);}
+  for(let y=Math.floor(cam.y-H/2/cam.s/g)*g;y<cam.y+H/2/cam.s;y+=g){
+    const sy=(y-cam.y)*cam.s+H/2;ctx.moveTo(0,sy);ctx.lineTo(W,sy);}
+  ctx.stroke();
+  const o=w2s(0,0);
+  ctx.strokeStyle='rgba(126,200,255,0.35)';ctx.lineWidth=1;
+  ctx.beginPath();ctx.arc(o.x,o.y,10,0,7);ctx.moveTo(o.x-16,o.y);ctx.lineTo(o.x+16,o.y);
+  ctx.moveTo(o.x,o.y-16);ctx.lineTo(o.x,o.y+16);ctx.stroke();
+}
+
+function bodyHalf(g,cx,sg){
+  const X=v=>cx+v*sg;
+  g.moveTo(X(0),56);
+  g.bezierCurveTo(X(58),56,X(100),82,X(100),120);
+  g.lineTo(X(100),234);
+  g.bezierCurveTo(X(98),254,X(82),266,X(60),272);
+  g.bezierCurveTo(X(44),278,X(32),286,X(34),300);
+  g.bezierCurveTo(X(36),320,X(56),334,X(92),354);
+  g.bezierCurveTo(X(142),370,X(192),378,X(212),394);
+  g.bezierCurveTo(X(232),420,X(241),468,X(248),560);
+  g.bezierCurveTo(X(254),660,X(257),722,X(260),778);
+  g.bezierCurveTo(X(265),862,X(263),940,X(258),1008);
+  g.bezierCurveTo(X(267),1032,X(273),1062,X(270),1102);
+  g.lineTo(X(246),1096);
+  g.bezierCurveTo(X(243),1058,X(240),1030,X(238),1000);
+  g.bezierCurveTo(X(231),920,X(226),846,X(220),772);
+  g.bezierCurveTo(X(215),680,X(200),560,X(170),450);
+  g.bezierCurveTo(X(165),486,X(158),540,X(156),600);
+  g.bezierCurveTo(X(126),660,X(114),740,X(112),800);
+  g.bezierCurveTo(X(118),880,X(146),930,X(156),966);
+  g.bezierCurveTo(X(130),992,X(118),1012,X(114),1042);
+  g.bezierCurveTo(X(104),1130,X(96),1222,X(92),1300);
+  g.bezierCurveTo(X(88),1356,X(84),1412,X(80),1456);
+  g.bezierCurveTo(X(78),1520,X(76),1560,X(72),1590);
+  g.bezierCurveTo(X(84),1622,X(84),1660,X(80),1692);
+  g.lineTo(X(30),1704);
+  g.bezierCurveTo(X(33),1664,X(35),1620,X(38),1592);
+  g.bezierCurveTo(X(44),1520,X(48),1440,X(50),1360);
+  g.bezierCurveTo(X(50),1330,X(48),1310,X(46),1296);
+  g.bezierCurveTo(X(42),1180,X(40),1060,X(0),986);
+}
+function drawBody(cx,isBack,alpha){
+  ctx.save();ctx.globalAlpha=alpha;
+  ctx.strokeStyle='#8fb4dc';ctx.lineWidth=Math.min(2.2,1.4/cam.s);
+  ctx.beginPath();bodyHalf(ctx,cx,1);bodyHalf(ctx,cx,-1);ctx.stroke();
+  ctx.setLineDash([6/cam.s,7/cam.s]);ctx.globalAlpha=alpha*0.7;
+  if(isBack){
+    ctx.beginPath();ctx.moveTo(cx,352);ctx.lineTo(cx,1012);ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.beginPath();ctx.moveTo(cx-62,240);ctx.quadraticCurveTo(cx-20,300,cx,302);
+    ctx.quadraticCurveTo(cx+20,300,cx+62,240);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(cx-70,1075);ctx.quadraticCurveTo(cx,1090,cx+70,1075);ctx.stroke();
+  }else{
+    ctx.beginPath();
+    ctx.moveTo(cx,398);ctx.quadraticCurveTo(cx-52,390,cx-188,382);
+    ctx.moveTo(cx,398);ctx.quadraticCurveTo(cx+52,390,cx+188,382);ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.beginPath();ctx.arc(cx,780,7/cam.s,0,7);ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(cx-42,962);ctx.quadraticCurveTo(cx-66,986,cx-92,1002);
+    ctx.moveTo(cx+42,962);ctx.quadraticCurveTo(cx+66,986,cx+92,1002);ctx.stroke();
+  }
+  ctx.restore();
+  if(cam.s<0.85){ctx.save();
+    ctx.font=`600 ${Math.min(15,14/cam.s*1.2)}px sans-serif`;ctx.textAlign='center';
+    ctx.fillStyle='rgba(150,185,225,0.5)';
+    ctx.fillText(isBack?'背 面 观':'前 面 观',cx,cam.s<0.4?30:20);
+    ctx.font=`${Math.min(10,10/cam.s)}px sans-serif`;
+    ctx.fillStyle='rgba(150,185,225,0.3)';
+    ctx.fillText(isBack?'POSTERIOR':'ANTERIOR',cx,cam.s<0.4?46:36);
+    ctx.restore();}
+}
+
+/* ★ 修复1：R_Q（原误写为 R,Q 导致整个渲染循环崩溃） */
+function drawCircleFrame(){
+  ctx.save();
+  ctx.lineWidth=1/Math.max(cam.s,0.3);
+  ctx.strokeStyle='rgba(140,180,240,0.10)';
+  for(const r of[R_RD,R_DAI,R_W,R_Q]){ctx.beginPath();ctx.arc(CIR.x,CIR.y,r,0,7);ctx.stroke();}
+  ctx.strokeStyle='rgba(160,200,255,0.14)';ctx.lineWidth=2/Math.max(cam.s,0.3);
+  ctx.beginPath();ctx.arc(CIR.x,CIR.y,R_M,0,7);ctx.stroke();
+  for(let i=0;i<12;i++){const a=ziAng(i),c=Math.cos(a),s=Math.sin(a);
+    ctx.strokeStyle='rgba(160,200,255,0.28)';ctx.lineWidth=1.5/Math.max(cam.s,0.3);
+    ctx.beginPath();
+    ctx.moveTo(CIR.x+(R_M-24)*c,CIR.y+(R_M-24)*s);
+    ctx.lineTo(CIR.x+(R_M+44)*c,CIR.y+(R_M+44)*s);
+    ctx.stroke();}
+  ctx.strokeStyle='rgba(201,107,255,0.55)';ctx.lineWidth=1.8/Math.max(cam.s,0.4);
+  ctx.lineCap='round';
+  ctx.beginPath();
+  ctx.moveTo(CIR.x,CIR.y+90);ctx.lineTo(CIR.x-64,CIR.y-42);
+  ctx.moveTo(CIR.x,CIR.y+90);ctx.lineTo(CIR.x,CIR.y-70);
+  ctx.moveTo(CIR.x,CIR.y+90);ctx.lineTo(CIR.x+64,CIR.y-42);
+  ctx.stroke();
+  ctx.textAlign='center';
+  ctx.font='600 46px "Songti SC","STSong","SimSun",serif';
+  ctx.fillStyle='rgba(238,246,255,0.96)';
+  ctx.fillText('經 絡 圓 圖',CIR.x,CIR.y-R_M-236);
+  ctx.font='15px sans-serif';
+  ctx.fillStyle='rgba(150,180,220,0.7)';
+  ctx.fillText('十二正經如環流注 · 任督小周天 · 奇經八脈',CIR.x,CIR.y-R_M-200);
+  ctx.restore();
+}
+
+function activeSector(){
+  if(st.flow.on)return{idx:ZI.findIndex(z=>z[1]===ORDER[st.flow.idx]),lab:'当令'};
+  const h=new Date().getHours();
+  return{idx:Math.floor(((h+1)%24)/2),lab:'此刻'};}
+
+function drawZiLabels(){
+  const act=activeSector();
+  for(let i=0;i<12;i++){
+    const a=ziAng(i)+Math.PI/12;
+    const x=CIR.x+(R_M+112)*Math.cos(a),y=CIR.y+(R_M+112)*Math.sin(a);
+    const m=D[ZI[i][1]];
+    const on=i===act.idx;
+    ctx.save();ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.font=`${on?'600 54px':'600 46px'} "Songti SC","STSong","SimSun",serif`;
+    if(on){ctx.shadowColor='#ffd166';ctx.shadowBlur=18;}
+    ctx.fillStyle=on?'#ffd166':'rgba(222,236,255,0.88)';
+    ctx.fillText(ZI[i][0],x,y);
+    ctx.shadowBlur=0;
+    if(cam.s>0.42){
+      ctx.font='14px sans-serif';
+      ctx.fillStyle='rgba(150,180,220,0.55)';
+      ctx.fillText(HOUR[ZI[i][1]][1],x,y+32);
+    }
+    if(on){
+      ctx.font='600 15px sans-serif';
+      ctx.fillStyle='rgba(255,209,102,0.92)';
+      ctx.fillText(act.lab+' · '+m.abbr+'经',x,y+(cam.s>0.42?54:34));
+    }
+    ctx.restore();}
+}
+
+function drawMerArcLabels(){
+  if(cam.s>0.8)return;
+  const fs=Math.max(20,11.5/Math.max(cam.s,0.3));
+  for(let i=0;i<12;i++){
+    const m=D[ZI[i][1]];if(!m.on)continue;
+    const a=ziAng(i)+Math.PI/12,r=R_M-95;
+    ctx.save();
+    ctx.translate(CIR.x+r*Math.cos(a),CIR.y+r*Math.sin(a));
+    let rot=a+Math.PI/2;
+    if(a>0.25&&a<Math.PI-0.25)rot=a-Math.PI/2;
+    ctx.rotate(rot);
+    ctx.font=`600 ${fs}px sans-serif`;
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.globalAlpha=Math.max(merAlpha(m),0.35);
+    const t=ZI[i][0]+' · '+m.abbr+'经';
+    ctx.lineWidth=4/Math.max(cam.s,0.3);ctx.strokeStyle='rgba(5,8,16,0.7)';
+    ctx.strokeText(t,0,0);
+    ctx.fillStyle=m.color;ctx.fillText(t,0,0);
+    ctx.restore();}
+}
+
+function drawVesselLabels(){
+  const items=[
+    [D.GV,'督脉 · 阳脉之海',Math.PI,R_RD,'right'],
+    [D.CV,'任脉 · 阴脉之海',0,R_RD,'left'],
+    [D2.DAI,'带脉 · 总束诸经',-3*Math.PI/4,R_DAI,'center'],
+    [D2.YANGW,'阳维脉 · 维络诸阳',-Math.PI/6,R_W,'left'],
+    [D2.YINW,'阴维脉 · 维络诸阴',-5*Math.PI/6,R_W,'right'],
+    [D2.YANGQ,'阳跷脉',Math.PI/3,R_Q,'left'],
+    [D2.YINQ,'阴跷脉',2*Math.PI/3,R_Q,'right'],
+  ];
+  const fs=12.5/Math.max(cam.s,0.35);
+  ctx.save();ctx.font=`600 ${fs}px sans-serif`;ctx.textBaseline='middle';
+  const chip=(m,txt,x,y,al)=>{
+    ctx.textAlign=al;
+    const tw=ctx.measureText(txt).width;
+    const bx=x-(al==='right'?tw:al==='center'?tw/2:0);
+    ctx.globalAlpha=Math.max(merAlpha(m),0.3);
+    ctx.fillStyle='rgba(7,11,20,0.82)';
+    rr(bx-6,y-fs*0.85,tw+12,fs*1.7,5);ctx.fill();
+    ctx.strokeStyle=m.color;ctx.lineWidth=1/Math.max(cam.s,0.35);
+    rr(bx-6,y-fs*0.85,tw+12,fs*1.7,5);ctx.stroke();
+    ctx.fillStyle=m.color;ctx.fillText(txt,x,y);};
+  for(const[m,txt,a,r,al]of items){
+    if(!m.on)continue;
+    chip(m,txt,CIR.x+(r+6)*Math.cos(a),CIR.y+(r+6)*Math.sin(a),al);}
+  if(D2.CH.on)chip(D2.CH,'冲脉 · 十二经之海',CIR.x+18,CIR.y-108,'left');
+  ctx.restore();
+}
+
+function drawClockHand(){
+  const act=activeSector();
+  if(act.idx<0||act.idx>11)return;
+  const m=D[ZI[act.idx][1]];
+  const a0=ziAng(act.idx),a1=a0+Math.PI/6,am=a0+Math.PI/12;
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(CIR.x,CIR.y,R_M-10,a0,a1);
+  ctx.arc(CIR.x,CIR.y,130,a1,a0,true);
+  ctx.closePath();
+  ctx.fillStyle=m.color;ctx.globalAlpha=st.flow.on?0.10:0.05;
+  ctx.fill();
+  ctx.globalAlpha=1;
+  const gx=CIR.x+Math.cos(am)*130,gy=CIR.y+Math.sin(am)*130;
+  const hx=CIR.x+Math.cos(am)*(R_M-16),hy=CIR.y+Math.sin(am)*(R_M-16);
+  const gr=ctx.createLinearGradient(gx,gy,hx,hy);
+  gr.addColorStop(0,'rgba(255,209,102,0)');gr.addColorStop(1,'rgba(255,209,102,0.85)');
+  ctx.strokeStyle=gr;ctx.lineWidth=2.2/Math.max(cam.s,0.4);
+  ctx.shadowColor='#ffd166';ctx.shadowBlur=8;
+  ctx.beginPath();ctx.moveTo(gx,gy);ctx.lineTo(hx,hy);ctx.stroke();
+  ctx.fillStyle='#ffd166';
+  ctx.beginPath();ctx.arc(hx,hy,4/Math.max(cam.s,0.4),0,7);ctx.fill();
+  ctx.restore();
+}
+
+function drawChains(){
+  for(const ch of chains){
+    const m=ch.mer;if(!m.on)continue;
+    const a=merAlpha(m);if(a<0.02)continue;
+    const sel=(st.selMer===m||st.hovMer===m);
+    const cs=ch.style||{};
+    ctx.save();ctx.globalAlpha=a*(cs.alpha||1);
+    ctx.strokeStyle=m.color;
+    ctx.lineWidth=(cs.w||(ch.branch?1.5:(sel?3.4:2.1)))/Math.max(cam.s,0.5);
+    if(cs.dash)ctx.setLineDash(cs.dash);
+    ctx.lineJoin='round';ctx.lineCap='round';
+    if(sel){ctx.shadowColor=m.color;ctx.shadowBlur=12;}
+    ctx.beginPath();
+    if(ch.path){
+      ctx.moveTo(ch.path[0].x,ch.path[0].y);
+      for(let i=1;i<ch.path.length;i++)ctx.lineTo(ch.path[i].x,ch.path[i].y);
+    }else{
+      const p0=ch.pts[0];ctx.moveTo(p0.x,p0.y);
+      for(const g of ch.segs){
+        if(g.q)ctx.quadraticCurveTo(g.c.x,g.c.y,g.b.x,g.b.y);
+        else ctx.lineTo(g.b.x,g.b.y);}
+    }
+    ctx.stroke();
+    if(cs.core){
+      ctx.shadowBlur=0;ctx.globalAlpha=a;
+      ctx.lineWidth=1.4/Math.max(cam.s,0.5);
+      ctx.strokeStyle='#f4e9ff';ctx.stroke();}
+    ctx.restore();
+  }
+}
+
+function drawArrows(){
+  if(!st.showArrows||cam.s<0.42)return;
+  const sz=Math.min(11,9/Math.max(cam.s,0.4));
+  for(const ch of chains){
+    const m=ch.mer;if(!m.on)continue;
+    const a=merAlpha(m);if(a<0.25)continue;
+    ctx.save();ctx.globalAlpha=a*0.85;
+    ctx.strokeStyle=m.color;ctx.lineWidth=1.6/Math.max(cam.s,0.5);
+    ctx.lineCap='round';
+    const sp=ch.circ?95:135;
+    for(const g of ch.segs){
+      if(g.len<sp*0.8&&ch.circ)continue;
+      let d=sp/2;
+      while(d<g.len){const t=d/g.len;
+        let px,py,ang;
+        if(g.q){const p=qbez(g.a,g.c,g.b,t),p2=qbez(g.a,g.c,g.b,Math.min(1,t+0.02));
+          px=p.x;py=p.y;ang=Math.atan2(p2.y-p.y,p2.x-p.x);}
+        else{px=g.a.x+(g.b.x-g.a.x)*t;py=g.a.y+(g.b.y-g.a.y)*t;ang=Math.atan2(g.b.y-g.a.y,g.b.x-g.a.x);}
+        ctx.beginPath();
+        ctx.moveTo(px-Math.cos(ang-0.5)*sz,py-Math.sin(ang-0.5)*sz);
+        ctx.lineTo(px,py);
+        ctx.lineTo(px-Math.cos(ang+0.5)*sz,py-Math.sin(ang+0.5)*sz);
+        ctx.stroke();
+        d+=sp;}
+    }
+    ctx.restore();}
+}
+
+/* ── 控制点计算 ── */
+function connCtrl(na,nb,side){
+  if(Math.abs(na.x-nb.x)>600)
+    return {x:(na.x+nb.x)/2,y:(na.y+nb.y)/2-Math.abs(nb.x-na.x)*0.15};
+  const mx=(na.x+nb.x)/2,my=(na.y+nb.y)/2;
+  const dx=nb.x-na.x,dy=nb.y-na.y,L=Math.hypot(dx,dy)||1;
+  const k=L*0.18*side;
+  return {x:mx-dy/L*k,y:my+dx/L*k};}
+function bridgeCtrl(na,nb,bulge){
+  const mx=(na.x+nb.x)/2,my=(na.y+nb.y)/2;
+  let dx=mx-CIR.x,dy=my-CIR.y;const L=Math.hypot(dx,dy)||1;
+  return {x:mx+dx/L*bulge,y:my+dy/L*bulge};}
+function connCtrlBm(na,nb){
+  const mx=(na.x+nb.x)/2,my=(na.y+nb.y)/2;
+  const dx=nb.x-na.x,dy=nb.y-na.y,L=Math.hypot(dx,dy)||1;
+  const k=L*0.25;
+  return {x:mx-dy/L*k,y:my+dx/L*k};}
+function bmCircCtrl(na,nb){
+  const mx=(na.x+nb.x)/2,my=(na.y+nb.y)/2;
+  return {x:CIR.x+(mx-CIR.x)*0.3,y:CIR.y+(my-CIR.y)*0.3};}
+
+function drawBridge(na,nb,ca,cb,time,hot,ctrl,thin){
+  const gr=ctx.createLinearGradient(na.x,na.y,nb.x,nb.y);
+  gr.addColorStop(0,ca);gr.addColorStop(1,cb);
+  ctx.save();ctx.globalAlpha=hot?0.95:(thin?0.5:0.42);
+  ctx.strokeStyle=gr;ctx.lineWidth=(hot?2.4:1.4)/Math.max(cam.s,0.5);
+  ctx.setLineDash([7,8].map(v=>v/Math.max(cam.s,0.5)));
+  ctx.lineDashOffset=-time*(hot?55:16);
+  ctx.beginPath();ctx.moveTo(na.x,na.y);ctx.quadraticCurveTo(ctrl.x,ctrl.y,nb.x,nb.y);ctx.stroke();
+  ctx.restore();}
+
+function drawConns(time){
+  if(!st.showConn)return;
+  for(let i=0;i<CONN.length;i++){
+    const c=CONN[i],ma=D[c[0]],mb=D[c[2]];
+    const hot=st.flow.on&&ORDER[st.flow.idx]===c[0];
+    for(const side of [1,-1]){
+      const na=findPt(c[0],c[1],side),nb=findPt(c[2],c[3],side);
+      if(!na||!nb)continue;
+      drawBridge(na,nb,ma.color,mb.color,time,hot,connCtrl(na,nb,side),false);}
+    const ca=circNode(c[0],c[1]),cb=circNode(c[2],c[3]);
+    if(ca&&cb)drawBridge(ca,cb,ma.color,mb.color,time,hot,bridgeCtrl(ca,cb,34),false);}
+  for(const c of CIRC_EXTRA){
+    const ca=circNode(c[0],c[1]),cb=circNode(c[2],c[3]);
+    if(ca&&cb)drawBridge(ca,cb,D[c[0]].color,D[c[2]].color,time,false,bridgeCtrl(ca,cb,26),false);}
+  for(const L of QIAO_LINKS)
+    if(L[0]&&L[1]&&L[0].mer.on)drawBridge(L[0],L[1],L[0].mer.color,'#ffffff',time,false,bridgeCtrl(L[0],L[1],14),true);
+}
+
+/* ── 八脉交会配对 ── */
+function bmHotPair(){const n=st.hovPt||st.selPt;return n?BMIDX[n.name]:null;}
+
+function bmChip(x,y,p,hot){
+  const fs=12.5/Math.max(cam.s,0.4);
+  ctx.save();
+  ctx.font=`600 ${fs}px sans-serif`;
+  const t1=`${p.a[1]} ↔ ${p.b[1]}`;
+  const t2=`通${p.name} · 主${p.zhu}`;
+  const w=Math.max(ctx.measureText(t1).width,ctx.measureText(t2).width*0.9)+fs*2.6;
+  const h=fs*3.4;
+  ctx.fillStyle='rgba(8,12,22,.92)';
+  rr(x-w/2,y-h/2,w,h,8);ctx.fill();
+  ctx.strokeStyle=hot?'rgba(255,209,102,.9)':'rgba(255,209,102,.4)';
+  ctx.lineWidth=1.2/Math.max(cam.s,0.4);
+  rr(x-w/2,y-h/2,w,h,8);ctx.stroke();
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillStyle='#ffd166';ctx.fillText(t1,x,y-fs*0.8);
+  ctx.font=`${fs*0.8}px sans-serif`;
+  ctx.fillStyle='rgba(210,225,245,.9)';ctx.fillText(t2,x,y+fs*0.85);
+  ctx.restore();}
+
+function bmLine(na,nb,ma,mb,p,time,hot,ctrl){
+  const gr=ctx.createLinearGradient(na.x,na.y,nb.x,nb.y);
+  gr.addColorStop(0,ma.color);gr.addColorStop(1,mb.color);
+  let al=0.5;
+  if(hot)al=1;
+  else if(st.selMer&&st.selMer!==ma&&st.selMer!==mb)al=0.1;
+  else if(st.flow.on)al=0.15;
+  ctx.save();
+  ctx.globalAlpha=al;
+  ctx.strokeStyle=gr;
+  ctx.lineWidth=(hot?3:1.8)/Math.max(cam.s,0.5);
+  ctx.setLineDash([10,7].map(v=>v/Math.max(cam.s,0.5)));
+  ctx.lineDashOffset=-time*30;
+  ctx.lineCap='round';
+  if(hot){ctx.shadowColor='#ffd166';ctx.shadowBlur=14;}
+  ctx.beginPath();ctx.moveTo(na.x,na.y);ctx.quadraticCurveTo(ctrl.x,ctrl.y,nb.x,nb.y);ctx.stroke();
+  ctx.restore();
+  if(hot){
+    ctx.save();ctx.strokeStyle='#ffd166';ctx.lineWidth=2/Math.max(cam.s,0.4);
+    for(const n of [na,nb]){
+      ctx.beginPath();ctx.arc(n.x,n.y,11/Math.max(cam.s,0.4),0,7);ctx.stroke();}
+    ctx.restore();}
+  const mid=qbez(na,ctrl,nb,0.5);
+  if(hot||cam.s>0.62)bmChip(mid.x,mid.y,p,hot);}
+
+function drawBamaio(time){
+  if(!st.showBamaio)return;
+  const hotP=bmHotPair();
+  for(const p of BM){
+    const ma=D[p.a[0]],mb=D[p.b[0]];
+    for(const side of [1,-1]){
+      const na=findPt(p.a[0],p.a[1],side),nb=findPt(p.b[0],p.b[1],side);
+      if(!na||!nb)continue;
+      bmLine(na,nb,ma,mb,p,time,hotP===p,connCtrlBm(na,nb));}
+    const ca=circNode(p.a[0],p.a[1]),cb=circNode(p.b[0],p.b[1]);
+    if(ca&&cb)bmLine(ca,cb,ma,mb,p,time,hotP===p,bmCircCtrl(ca,cb));
+  }
+}
+
+/* ── 十五络脉 ── */
+function luoArc(na,nb,ma,mb,time,ctrl){
+  const gr=ctx.createLinearGradient(na.x,na.y,nb.x,nb.y);
+  gr.addColorStop(0,ma.color);gr.addColorStop(1,mb.color);
+  ctx.save();
+  ctx.globalAlpha=0.55;
+  ctx.strokeStyle=gr;
+  ctx.lineWidth=1.6/Math.max(cam.s,0.5);
+  ctx.setLineDash([4,5].map(v=>v/Math.max(cam.s,0.5)));
+  ctx.lineDashOffset=-time*12;
+  ctx.lineCap='round';
+  ctx.beginPath();ctx.moveTo(na.x,na.y);ctx.quadraticCurveTo(ctrl.x,ctrl.y,nb.x,nb.y);ctx.stroke();
+  ctx.restore();}
+
+function luoFan(n,fan,mer,side){
+  ctx.save();ctx.globalAlpha=.55;ctx.strokeStyle=mer.color;
+  ctx.lineWidth=1.5/Math.max(cam.s,.5);
+  ctx.setLineDash([5,4].map(v=>v/Math.max(cam.s,.5)));
+  ctx.lineCap='round';
+  for(const d of fan){
+    ctx.beginPath();ctx.moveTo(n.x,n.y);
+    ctx.lineTo(n.x+d.dx*d.len*(d.dx?side:1),n.y+d.dy*d.len);ctx.stroke();}
+  ctx.restore();}
+
+function luoFanCirc(n,mer){
+  const a=Math.atan2(n.y-CIR.y,n.x-CIR.x);
+  ctx.save();ctx.globalAlpha=.55;ctx.strokeStyle=mer.color;
+  ctx.lineWidth=1.4/Math.max(cam.s,.5);
+  ctx.setLineDash([4,4].map(v=>v/Math.max(cam.s,.5)));
+  ctx.lineCap='round';
+  for(const off of[-0.35,0,0.35]){
+    const b=a+off;
+    ctx.beginPath();ctx.moveTo(n.x,n.y);
+    ctx.lineTo(n.x+Math.cos(b)*46,n.y+Math.sin(b)*46);ctx.stroke();}
+  ctx.restore();}
+
+function drawLuo(time){
+  if(!st.showLuo)return;
+  for(const L of LUO){
+    const mA=D[L.from[0]];
+    if(L.to){
+      const mB=D[L.to[0]];
+      for(const side of[1,-1]){
+        const na=findPt(L.from[0],L.from[1],side),nb=findPt(L.to[0],L.to[1],side);
+        if(na&&nb)luoArc(na,nb,mA,mB,time,connCtrlBm(na,nb));}
+      const ca=circNode(L.from[0],L.from[1]),cb=circNode(L.to[0],L.to[1]);
+      if(ca&&cb)luoArc(ca,cb,mA,mB,time,bmCircCtrl(ca,cb));
+    }else{
+      const arr=nodeIdx[L.from[1]]||[];
+      for(const n of arr){
+        if(n.circ){luoFanCirc(n,mA);continue;}
+        luoFan(n,L.fan,mA,n.side||1);}
+    }
+  }
+}
+
+/* ── 配穴处方 ── */
+function drawRx(){
+  if(!st.showRx||!st.rx.length)return;
+  for(const p of st.rx){
+    const a=p.a,b=p.b;if(!a||!b)continue;
+    const ctrl=connCtrlBm(a,b);
+    ctx.save();
+    ctx.strokeStyle='#ffd166';
+    ctx.lineWidth=2.6/Math.max(cam.s,.5);
+    ctx.shadowColor='#ffd166';ctx.shadowBlur=12;
+    ctx.lineCap='round';
+    ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.quadraticCurveTo(ctrl.x,ctrl.y,b.x,b.y);ctx.stroke();
+    ctx.restore();
+    if(cam.s>0.25){
+      const mid=qbez(a,ctrl,b,.5),fs=12/Math.max(cam.s,.4);
+      ctx.save();
+      ctx.font=`600 ${fs}px sans-serif`;
+      const t=p.label,w=ctx.measureText(t).width;
+      ctx.fillStyle='rgba(8,12,22,.92)';
+      rr(mid.x-w/2-6,mid.y-fs*.85,w+12,fs*1.7,6);ctx.fill();
+      ctx.strokeStyle='rgba(255,209,102,.7)';ctx.lineWidth=1/Math.max(cam.s,.4);
+      rr(mid.x-w/2-6,mid.y-fs*.85,w+12,fs*1.7,6);ctx.stroke();
+      ctx.fillStyle='#ffd166';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(t,mid.x,mid.y);
+      ctx.restore();}
+  }
+}
+
+function drawParticles(dt){
+  if(!st.showFlow)return;
+  ctx.save();ctx.globalCompositeOperation='lighter';
+  for(const ch of chains){
+    const m=ch.mer;if(!m.on)continue;
+    const a=merAlpha(m);if(a<0.05)continue;
+    const hot=st.flow.on&&ORDER[st.flow.idx]===m.id;
+    for(const p of ch.parts){
+      p.d+=p.v*dt*(hot?1.6:1);
+      const pos=posAt(ch,p.d),tail=posAt(ch,p.d-16/Math.max(cam.s,0.5));
+      const r=(hot?3.2:2.2)/Math.max(cam.s,0.5);
+      ctx.globalAlpha=a*0.6;
+      ctx.strokeStyle=m.color;ctx.lineWidth=r*0.9;ctx.lineCap='round';
+      ctx.beginPath();ctx.moveTo(tail.x,tail.y);ctx.lineTo(pos.x,pos.y);ctx.stroke();
+      ctx.globalAlpha=a;
+      ctx.fillStyle='#fff';
+      ctx.beginPath();ctx.arc(pos.x,pos.y,r,0,7);ctx.fill();}
+  }
+  ctx.restore();
+}
+
+function drawNodes(){
+  for(const n of nodes){
+    if(!n.mer.on)continue;
+    const s=w2s(n.x,n.y);
+    if(s.x<-30||s.x>W+30||s.y<-30||s.y>H+30)continue;
+    const a=merAlpha(n.mer);if(a<0.03)continue;
+    const hov=st.hovPt===n||st.selPt===n;
+    let r=(n.lvl===2?6:n.lvl===1?4.4:3.3)/Math.max(cam.s,0.4)*(hov?1.6:1);
+    if(n.chain&&n.chain.gap)r=Math.min(r,n.chain.gap*0.45);
+    const wx=st.showWux&&n.wux;
+    const ringC=wx?WUX[n.wux.el]:(n.lvl===2?'#ffffff':n.mer.color);
+    const fillC=n.lvl===2?'#ffffff':(wx?WUX[n.wux.el]:n.mer.color);
+    ctx.save();ctx.globalAlpha=Math.max(a,0.25);
+    if(st.showBamaio&&BMIDX[n.name]){
+      ctx.strokeStyle='rgba(255,209,102,.75)';
+      ctx.lineWidth=1.3/Math.max(cam.s,0.4);
+      ctx.beginPath();ctx.arc(n.x,n.y,r*1.75,0,7);ctx.stroke();}
+    if(n.lvl===2||hov){ctx.shadowColor=ringC;ctx.shadowBlur=hov?16:8;}
+    ctx.strokeStyle=ringC;
+    ctx.lineWidth=1.6/Math.max(cam.s,0.4);
+    ctx.beginPath();ctx.arc(n.x,n.y,r,0,7);ctx.stroke();
+    ctx.fillStyle=fillC;
+    ctx.beginPath();ctx.arc(n.x,n.y,r*0.42,0,7);ctx.fill();
+    ctx.restore();
+  }
+  if(st.selPt){const n=st.selPt,ph=(performance.now()/900)%1;
+    ctx.save();ctx.strokeStyle='#fff';ctx.globalAlpha=(1-ph)*0.8;
+    ctx.lineWidth=2/Math.max(cam.s,0.4);
+    ctx.beginPath();ctx.arc(n.x,n.y,(8+ph*22)/Math.max(cam.s,0.4),0,7);ctx.stroke();ctx.restore();}
+}
+
+/* ── 穴位名称标签（屏幕空间 · 恒定字号 · 分桶防重叠）── */
+const _twCache=new Map();
+function drawLabels(){
+  if(st.nameMode===0)return;
+  const fs=10.5;
+  ctx.font=`${fs}px -apple-system,'PingFang SC','Microsoft YaHei',sans-serif`;
+  ctx.textAlign='left';ctx.textBaseline='alphabetic';
+  let thr=0;
+  if(st.nameMode===1)thr=cam.s<0.32?2:1;
+  const cand=[];
+  const selM=st.selMer;
+  for(const n of nodes){
+    if(!n.mer.on)continue;
+    const hot=(n===st.hovPt||n===st.selPt);
+    if(selM&&n.mer!==selM&&!hot)continue;
+    if(!hot&&n.lvl<thr)continue;
+    const sx=(n.x-cam.x)*cam.s+W/2,sy=(n.y-cam.y)*cam.s+H/2;
+    if(sx<-80||sx>W+80||sy<-30||sy>H+30)continue;
+    cand.push({n,sx,sy,hot});
+  }
+  cand.sort((a,b)=>(b.hot?9:b.n.lvl)-(a.hot?9:a.n.lvl));
+  const rowH=26,buckets=new Map();
+  const put=(x,y,w)=>{
+    const kA=Math.floor((y-fs)/rowH),kB=Math.floor((y+3)/rowH);
+    for(let k=kA;k<=kB;k++){
+      const arr=buckets.get(k);if(!arr)continue;
+      for(let i=0;i<arr.length;i++){const r=arr[i];
+        if(x<r[2]&&x+w>r[0]&&y-fs<r[3]&&y+3>r[1])return false;}}
+    for(let k=kA;k<=kB;k++){
+      let arr=buckets.get(k);if(!arr){arr=[];buckets.set(k,arr);}
+      arr.push([x-1,y-fs-1,x+w+1,y+3]);}
+    return true;};
+  let cnt=0;
+  for(const c of cand){
+    if(cnt>=800)break;
+    const n=c.n;
+    let w=_twCache.get(n.name);
+    if(w===undefined){w=ctx.measureText(n.name).width;_twCache.set(n.name,w);}
+    let x=c.sx+7,y=c.sy+3.5;
+    if(!put(x,y,w)){
+      x=c.sx-7-w;
+      if(!put(x,y,w)){
+        x=c.sx-w/2;y=c.sy+fs+7;
+        if(!put(x,y,w))continue;
+      }
+    }
+    cnt++;
+    const a=Math.max(merAlpha(n.mer),0.4);
+    ctx.globalAlpha=Math.min(1,a+0.2);
+    ctx.lineWidth=3;ctx.strokeStyle='rgba(5,8,16,0.9)';
+    ctx.strokeText(n.name,x,y);
+    ctx.fillStyle=n.lvl===2?'#ffffff':(n.lvl===1?n.mer.color:'rgba(216,228,246,0.92)');
+    ctx.fillText(n.name,x,y);
+  }
+  ctx.globalAlpha=1;
+}
+
+function drawMerLabels(){
+  if(cam.s>=0.55&&!st.selMer)return;
+  for(const m of mers){
+    if(!m.on||m.circOnly)continue;
+    const a=merAlpha(m);if(a<0.3)continue;
+    const ch=m.chains[0];if(!ch)continue;
+    const b=ch.bbox;
+    ctx.save();ctx.globalAlpha=a;
+    const fs=13/Math.max(cam.s,0.3);
+    ctx.font=`600 ${fs}px -apple-system,'PingFang SC','Microsoft YaHei',sans-serif`;
+    const txt=(m.id==='CV'||m.id==='GV')?m.name:m.abbr+'经';
+    const tw=ctx.measureText(txt).width;
+    const x=b.x1,y=b.y1-10/Math.max(cam.s,0.3);
+    ctx.fillStyle='rgba(6,10,18,0.75)';
+    rr(x-5/Math.max(cam.s,0.3),y-fs,tw+10/Math.max(cam.s,0.3),fs*1.5,5);
+    ctx.fill();
+    ctx.fillStyle=m.color;ctx.textBaseline='middle';
+    ctx.fillText(txt,x,y-fs*0.22);
+    ctx.restore();}
+}
+function rr(x,y,w,h,r){ctx.beginPath();
+  ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+
+function findPt(merId,name,side){
+  const arr=nodeIdx[name]||[];
+  return arr.find(n=>n.mer.id===merId&&n.side===side)||arr.find(n=>n.mer.id===merId&&!n.circ);}
+
+/* ================= 主循环 ================= */
+let last=performance.now();
+function loop(now){
+  const dt=Math.min(0.05,(now-last)/1000);last=now;
+  const k=1-Math.exp(-6*dt);
+  cam.x+=(camT.x-cam.x)*k;cam.y+=(camT.y-cam.y)*k;cam.s+=(camT.s-cam.s)*k;
+  if(st.flow.on){st.flow.t+=dt;
+    if(st.flow.t>=st.flow.dur){st.flow.t=0;st.flow.idx=(st.flow.idx+1)%12;flowChanged();}}
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  ctx.fillStyle='#070b14';ctx.fillRect(0,0,W,H);
+  drawGrid();
+  ctx.save();
+  ctx.translate(W/2,H/2);ctx.scale(cam.s,cam.s);ctx.translate(-cam.x,-cam.y);
+  const bA=st.selMer?0.1:st.flow.on?0.06:0.3;
+  if(st.showBody){drawBody(0,false,bA);drawBody(1500,true,bA);}
+  drawCircleFrame();
+  drawZiLabels();
+  drawMerArcLabels();
+  drawVesselLabels();
+  drawConns(now/1000);
+  drawChains();
+  drawClockHand();
+  drawBamaio(now/1000);
+  drawLuo(now/1000);
+  drawRx();
+  drawArrows();
+  drawParticles(dt);
+  drawNodes();
+  drawMerLabels();
+  ctx.restore();
+  drawLabels();
+  $('zoomval').textContent=Math.round(cam.s*100)+'%';
+  requestAnimationFrame(loop);
+}
+
+/* ================= 交互 ================= */
+const ptrs=new Map();
+let dragging=false,downX=0,downY=0,downT=0,moved=false;
+cv.addEventListener('pointerdown',e=>{
+  cv.setPointerCapture(e.pointerId);
+  ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  downX=e.clientX;downY=e.clientY;downT=performance.now();moved=false;
+  if(ptrs.size===1){dragging=true;cv.classList.add('drag');}
+});
+cv.addEventListener('pointermove',e=>{
+  if(ptrs.has(e.pointerId)){
+    const p=ptrs.get(e.pointerId);
+    if(ptrs.size===2){
+      const arr=[...ptrs.values()];
+      const d0=Math.hypot(arr[0].x-arr[1].x,arr[0].y-arr[1].y);
+      p.x=e.clientX;p.y=e.clientY;
+      const arr2=[...ptrs.values()];
+      const d1=Math.hypot(arr2[0].x-arr2[1].x,arr2[0].y-arr2[1].y);
+      if(d0>0)zoomAt((arr2[0].x+arr2[1].x)/2,(arr2[0].y+arr2[1].y)/2,d1/d0);
+      moved=true;return;}
+    const dx=e.clientX-p.x,dy=e.clientY-p.y;
+    if(Math.abs(e.clientX-downX)+Math.abs(e.clientY-downY)>5)moved=true;
+    if(moved){cam.x-=dx/cam.s;cam.y-=dy/cam.s;camT.x=cam.x;camT.y=cam.y;}
+    p.x=e.clientX;p.y=e.clientY;
+  }else{onHover(e.clientX,e.clientY);}
+  if(ptrs.size===1&&!moved)onHover(e.clientX,e.clientY);
+});
+function endPtr(e){
+  ptrs.delete(e.pointerId);
+  if(ptrs.size===0){dragging=false;cv.classList.remove('drag');
+    if(!moved&&performance.now()-downT<450)onClick(e.clientX,e.clientY);}
+}
+cv.addEventListener('pointerup',endPtr);
+cv.addEventListener('pointercancel',endPtr);
+cv.addEventListener('dblclick',()=>{goView('all');});
+cv.addEventListener('wheel',e=>{e.preventDefault();
+  zoomAt(e.clientX,e.clientY,e.deltaY<0?1.13:1/1.13);},{passive:false});
+cv.addEventListener('pointerleave',()=>{setHover(null);});
+
+function hitNode(mx,my){
+  let best=null,bd=13;
+  for(const n of nodes){
+    if(!n.mer.on)continue;
+    const s=w2s(n.x,n.y),d=Math.hypot(s.x-mx,s.y-my);
+    if(d<bd+n.lvl*1.5){if(d<bd+6){bd=d;best=n;}}}
+  return best;}
+function hitChain(mx,my){
+  const w=s2w(mx,my),R=10/cam.s;
+  for(const ch of chains){
+    if(!ch.mer.on)continue;
+    for(const g of ch.segs){
+      if(segDist(w,g)<R)return ch.mer;}}
+  return null;}
+function segDist(p,g){
+  if(g.q){let m=1e9;for(let k=0;k<=4;k++){const q=qbez(g.a,g.c,g.b,k/4);
+    m=Math.min(m,Math.hypot(p.x-q.x,p.y-q.y));}return m;}
+  const ax=g.a.x,ay=g.a.y,bx=g.b.x,by=g.b.y;
+  const t=Math.max(0,Math.min(1,((p.x-ax)*(bx-ax)+(p.y-ay)*(by-ay))/((bx-ax)**2+(by-ay)**2||1)));
+  return Math.hypot(p.x-(ax+(bx-ax)*t),p.y-(ay+(by-ay)*t));}
+
+function onHover(mx,my){
+  const n=hitNode(mx,my);
+  setHover(n);
+  if(!n){const m=hitChain(mx,my);st.hovMer=m||null;cv.classList.toggle('pt',!!m);}
+  const tip=$('tip');
+  if(n){
+    let tagHtml=(n.tag?n.tag.split('·').map(t=>`<span class="tag">${t}</span>`).join(''):'');
+    if(n.wux)tagHtml+=`<span class="tag" style="background:${WUX[n.wux.el]}22;color:${WUX[n.wux.el]}">${n.wux.sh}穴·属${n.wux.el}</span>`;
+    const bp=BMIDX[n.name];
+    if(bp)tagHtml+=`<span class="tag" style="background:rgba(255,209,102,.16);color:#ffd166">八脉交会·配${bp.a[1]===n.name?bp.b[1]:bp.a[1]}</span>`;
+    let h=`<div class="tn">${n.name}<span class="m" style="color:${n.mer.color}">${n.mer.name}</span></div>`;
+    if(tagHtml)h+=`<div class="tags">${tagHtml}</div>`;
+    if(NOTE[n.name])h+=`<div class="note">${NOTE[n.name]}</div>`;
+    tip.innerHTML=h;tip.style.display='block';
+    const tw=tip.offsetWidth,th=tip.offsetHeight;
+    tip.style.left=Math.min(W-tw-10,mx+16)+'px';
+    tip.style.top=Math.min(H-th-10,my+16)+'px';
+  }else tip.style.display='none';}
+function setHover(n){st.hovPt=n;cv.classList.toggle('pt',!!n);
+  if(!n)$('tip').style.display='none';}
+
+function onClick(mx,my){
+  const n=hitNode(mx,my);
+  if(n){selectPoint(n);return;}
+  const m=hitChain(mx,my);
+  if(m){selectMer(m);return;}
+  selectMer(null);selectPoint(null);}
+
+function selectPoint(n){
+  st.selPt=n;
+  if(n){showDetail(n);flyTo(n.x,n.y,Math.max(cam.s,1.4));}
+  else $('detail').classList.remove('show');}
+
+/* ── 配伍建议引擎 ── */
+function buildRx(n){
+  const out=[],seen=new Set();
+  const add=(t,lb,ef)=>{
+    if(!t||t===n.name||seen.has(t))return;
+    if(!(nodeIdx[t]||[]).length)return;
+    seen.add(t);out.push([t,lb,ef]);};
+  for(const p of(PE[n.name]||[]))add(p[0],p[1],p[2]);
+  if(BIAOLI[n.mer.id]&&YUAN[n.mer.id])
+    add(LUOPT[BIAOLI[n.mer.id]],'原络配穴','本经原穴'+YUAN[n.mer.id]+'＋表里经络穴');
+  const mm=/(心包|大肠|小肠|膀胱|三焦|肺|胃|脾|心|胆|肝)之?募/.exec(n.tag||'');
+  if(mm&&SHU[mm[1]])add(SHU[mm[1]],'俞募配穴',mm[1]+'之募配'+mm[1]+'之俞');
+  const yy=/背俞·(.+)/.exec(n.tag||'');
+  if(yy&&MU[yy[1]])add(MU[yy[1]],'俞募配穴',yy[1]+'之俞配'+yy[1]+'之募');
+  return out.slice(0,6);}
+
+function findNodeView(name,circ,side){
+  const arr=nodeIdx[name]||[];
+  return arr.find(n=>(!!n.circ)===!!circ&&(circ||n.side===side||n.side===0))
+      ||arr.find(n=>!n.circ)||arr[0];}
+
+function addRx(src,targetName,label){
+  const tn=findNodeView(targetName,src.circ,src.side);
+  if(!tn){toast('未找到穴位：'+targetName);return;}
+  if(tn===src){toast('已选中该穴');return;}
+  const pe=(PE[src.name]||[]).find(p=>p[0]===targetName);
+  st.rx.push({a:src,b:tn,label:label||(pe?pe[1]:src.name+'＋'+targetName)});
+  renderRx();
+  selectPoint(tn);}
+
+function renderRx(){
+  const box=$('rxList');
+  $('rxCnt').textContent=st.rx.length?st.rx.length+' 组':'';
+  if(!st.rx.length){
+    box.innerHTML='<div class="rxempty">点击穴位，在详情卡的「配伍建议 / 子母补泻」或 AI 助手中<br>选择配穴加入处方</div>';return;}
+  box.innerHTML=st.rx.map((p,i)=>
+    `<div class="rxrow"><span class="nm">${p.a.name} ＋ ${p.b.name}</span><span class="lb">${p.label}</span><button data-i="${i}" title="移除">✕</button></div>`).join('');
+  box.querySelectorAll('button').forEach(b=>b.onclick=()=>{
+    st.rx.splice(+b.dataset.i,1);renderRx();});}
+
+$('rxClear').onclick=()=>{st.rx=[];renderRx();};
+
+/* ── 子母补泻内容渲染 ── */
+function renderZimu(n){
+  const zm=zimu(n.mer.id);
+  if(!zm){$('dZi').style.display='none';return null;}
+  const E=zm.E,mel=MU_EL[E],cel=SHENG[E];
+  const ec=el=>`<span class="zel" style="background:${WUX[el]}1f;color:${WUX[el]}">${el}</span>`;
+  let h=`<div class="h">☯ 子母补泻 · ${n.mer.abbr}经属${E}</div>`;
+  h+=`<div class="zrow"><span class="zl">虚则补其母</span>${ec(mel)}<span class="zarrow">→</span>${ec(E)}
+      <button class="zpt" data-n="${zm.mu.name}">${zm.mu.name}<i>${zm.mu.sh}·属${mel}</i></button>
+      <button class="zadd" data-n="${zm.mu.name}" data-l="补母·${zm.mu.name}">＋补</button></div>`;
+  h+=`<div class="zrow"><span class="zl">实则泻其子</span>${ec(E)}<span class="zarrow">→</span>${ec(cel)}
+      <button class="zpt" data-n="${zm.zi.name}">${zm.zi.name}<i>${zm.zi.sh}·属${cel}</i></button>
+      <button class="zadd" data-n="${zm.zi.name}" data-l="泻子·${zm.zi.name}">＋泻</button></div>`;
+  h+=`<div class="znote">生我者为母：${mel}（${EL_MERS[mel]}）生${E} → 虚证取本经属${mel}之穴；我生者为子：${E}生${cel}（${EL_MERS[cel]}）→ 实证取本经属${cel}之穴</div>`;
+  $('dZi').innerHTML=h;$('dZi').style.display='';
+  return zm;}
+
+function showDetail(n){
+  $('dBar').style.background=n.mer.color;
+  $('dName').textContent=n.name;
+  const qi=(n.mer.id==='CV'||n.mer.id==='GV'||n.mer.circOnly);
+  $('dMer').textContent=n.mer.name+(qi?' · 奇经八脉':'');
+  const tags=(n.tag?n.tag.split('·'):(NOTE[n.name]?['常用要穴']:[]));
+  $('dTags').innerHTML=tags.map(t=>`<span class="tag">${t}</span>`).join('');
+  let ex='';
+  if(n.wux)ex+=`<span class="tag" style="background:${WUX[n.wux.el]}22;color:${WUX[n.wux.el]}">五输 · ${n.wux.sh}穴 · 属${n.wux.el}</span>`;
+  const bp=BMIDX[n.name];
+  if(bp){const other=bp.a[1]===n.name?bp.b[1]:bp.a[1];
+    ex+=`<span class="tag" style="background:rgba(255,209,102,.15);color:#ffd166">八脉交会 · 配${other}</span>`+
+        `<span class="tag">合治：${bp.zhu}</span>`;}
+  $('dExtra').innerHTML=ex;
+  $('dNote').textContent=NOTE[n.name]||'循行所过，主治所及。';
+  if(LOC[n.name]){
+    $('dLoc').innerHTML=`<b>国标定位</b> · ${LOC[n.name]}`;
+    $('dLoc').style.display='';}
+  else $('dLoc').style.display='none';
+  renderZimu(n);
+  if(st.showRx){
+    const sug=buildRx(n);
+    let h='';
+    if(sug.length){
+      h='<div class="h">⚡ 配伍建议 · 点击加入处方</div>';
+      for(const s of sug)
+        h+=`<div class="rxit" data-t="${s[0]}" data-l="${s[1]}"><b>${s[0]}</b><span class="lb">${s[1]}</span><span class="ef">${s[2]}</span></div>`;}
+    else h='<div class="h">⚡ 配伍建议</div><div style="font-size:11px;color:var(--sub)">此穴暂无预置配伍，可用上方子母补泻或同经取穴</div>';
+    $('dRx').innerHTML=h;$('dRx').style.display='';}
+  else{$('dRx').innerHTML='';$('dRx').style.display='none';}
+  const pos=n.circ?'经络圆图 · 循环节点':
+    (n.v==='B'?'背面观':'前面观')+(n.side===1?' · 右侧':n.side===-1?' · 左侧':' · 单穴');
+  $('dPos').textContent='位置：'+pos+' ｜ 点击空白处关闭';
+  $('detail').classList.add('show');}
+$('dClose').onclick=()=>selectPoint(null);
+
+$('dRx').addEventListener('click',e=>{
+  const el=e.target.closest('.rxit');
+  if(!el||!st.selPt)return;
+  addRx(st.selPt,el.dataset.t,el.dataset.l);});
+
+$('dZi').addEventListener('click',e=>{
+  const add=e.target.closest('.zadd');
+  if(add&&st.selPt){
+    if(!st.showRx){st.showRx=true;syncOpt('showRx');$('rxbar').classList.add('show');renderRx();}
+    addRx(st.selPt,add.dataset.n,add.dataset.l);return;}
+  const pt=e.target.closest('.zpt');
+  if(pt){
+    const src=st.selPt;
+    const nd=findNodeView(pt.dataset.n,src&&src.circ,src?src.side:1);
+    if(nd)selectPoint(nd);}});
+$('dZi').addEventListener('mouseover',e=>{
+  const pt=e.target.closest('.zpt');
+  if(pt&&st.selPt){
+    const nd=findNodeView(pt.dataset.n,st.selPt.circ,st.selPt.side);
+    if(nd)st.hovPt=nd;}});
+$('dZi').addEventListener('mouseout',()=>{st.hovPt=null;});
+
+function chainsBbox(m,onlyCirc){
+  let b={x1:1e9,y1:1e9,x2:-1e9,y2:-1e9},any=false;
+  for(const ch of m.chains){
+    if(onlyCirc&&!ch.circ)continue;
+    if(!onlyCirc&&ch.circ)continue;
+    any=true;
+    b.x1=Math.min(b.x1,ch.bbox.x1);b.y1=Math.min(b.y1,ch.bbox.y1);
+    b.x2=Math.max(b.x2,ch.bbox.x2);b.y2=Math.max(b.y2,ch.bbox.y2);}
+  if(!any)return chainsBbox(m,false);
+  return b;}
+
+function selectMer(m){
+  st.selMer=(st.selMer===m)?null:m;
+  document.querySelectorAll('.mrow').forEach(r=>r.classList.toggle('sel',st.selMer&&r.dataset.id===st.selMer.id));
+  if(st.selMer)flyBox(chainsBbox(st.selMer,st.region==='circ'),0.8);}
+
+/* ================= UI 构建 ================= */
+function toggleMer(m){m.on=!m.on;
+  document.querySelectorAll(`.mrow[data-id="${m.id}"]`).forEach(r=>r.classList.toggle('off',!m.on));}
+
+function syncOpt(k){
+  document.querySelectorAll(`.opt[data-k="${k}"]`).forEach(el=>el.classList.toggle('on',st[k]));}
+
+function buildUI(){
+  const uniq=new Set(nodes.map(n=>n.name)).size;
+  $('stats').innerHTML=`<span class="badge"><b>${mers.length}</b> 经脉</span><span class="badge"><b>${uniq}</b> 穴位</span><span class="badge"><b>${RXDB.length}</b> 病证</span><span class="badge"><b>AI</b> 助手</span>`;
+  const ml=$('mlist');
+  for(const m of mers){
+    if(m.circOnly)continue;
+    const row=document.createElement('div');row.className='mrow';row.dataset.id=m.id;
+    row.innerHTML=`<span class="dot" style="background:${m.color};color:${m.color}"></span>
+      <span class="nm">${m.name}</span>
+      <span class="sub">${HOUR[m.id]?HOUR[m.id][0]+'时 · '+m.wx:m.wx}</span>
+      <button class="eye" title="显示/隐藏">👁</button>`;
+    row.onclick=e=>{if(e.target.classList.contains('eye'))return;selectMer(m);};
+    row.onmouseenter=()=>st.hovMer=m;row.onmouseleave=()=>st.hovMer=null;
+    row.querySelector('.eye').onclick=()=>toggleMer(m);
+    ml.appendChild(row);}
+  const ml2=$('mlist2');
+  for(const id of ['CV','GV','CH','DAI','YINW','YANGW','YINQ','YANGQ']){
+    const m=id==='CV'?D.CV:id==='GV'?D.GV:D2[id];
+    const row=document.createElement('div');row.className='mrow';row.dataset.id=m.id;
+    const sub=m.id==='CV'||m.id==='GV'?'小周天':m.wx;
+    row.innerHTML=`<span class="dot" style="background:${m.color};color:${m.color}"></span>
+      <span class="nm">${m.name}</span><span class="sub">${sub}</span>
+      <button class="eye" title="显示/隐藏">👁</button>`;
+    row.onclick=e=>{if(e.target.classList.contains('eye'))return;
+      if(st.region!=='circ')goView('circ');
+      selectMer(m);};
+    row.onmouseenter=()=>st.hovMer=m;row.onmouseleave=()=>st.hovMer=null;
+    row.querySelector('.eye').onclick=()=>toggleMer(m);
+    ml2.appendChild(row);}
+  const box=$('opts');
+  const nm=document.createElement('div');nm.className='opt';
+  const pills=['关闭','要穴','全部'];
+  nm.innerHTML=`<span class="tripill">${pills.map((p,i)=>`<i data-m="${i}">${p}</i>`).join('')}</span>穴位名称`;
+  const syncNm=()=>nm.querySelectorAll('i').forEach((el,i)=>el.classList.toggle('on',i===st.nameMode));
+  nm.onclick=()=>{st.nameMode=(st.nameMode+1)%3;syncNm();
+    if(st.nameMode===0)toast('穴位名称：已关闭');
+    else if(st.nameMode===1)toast('穴位名称：仅显示要穴');
+    else toast('穴位名称：全部显示（防重叠自动排布）');};
+  syncNm();box.appendChild(nm);
+  const opts=[['showBody','人体轮廓'],['showArrows','循行箭头'],
+    ['showConn','流注衔接线'],['showBamaio','八脉交会配对'],
+    ['showLuo','十五络脉'],
+    ['showWux','五输五行着色',v=>$('wuxleg').classList.toggle('show',v)],
+    ['showRx','配穴处方模式',v=>{$('rxbar').classList.toggle('show',v);renderRx();}],
+    ['showFlow','气血流动'],['follow','流注镜头跟随']];
+  for(const[k,t,fn]of opts){
+    const d=document.createElement('div');d.className='opt'+(st[k]?' on':'');
+    d.dataset.k=k;
+    d.innerHTML=`<span class="sw"></span>${t}`;
+    d.onclick=()=>{st[k]=!st[k];d.classList.toggle('on',st[k]);if(fn)fn(st[k]);};
+    box.appendChild(d);}
+  const wl=$('wuxleg');
+  wl.innerHTML=`<span class="t">五输五行</span>`+['木','火','土','金','水']
+    .map(e=>`<span class="it"><i style="background:${WUX[e]};color:${WUX[e]}"></i>${e}</span>`).join('');
+  const dots=$('dots');
+  ORDER.forEach((id,i)=>{
+    const m=D[id];
+    const b=document.createElement('button');b.className='fdot';
+    b.style.background=m.color;b.title=`${HOUR[id][0]}时 · ${m.name}`;
+    b.onmouseenter=()=>{if(!st.flow.on)st.hovMer=m;};
+    b.onmouseleave=()=>st.hovMer=null;
+    b.onclick=()=>{st.flow.idx=i;st.flow.t=0;selectMer(m);};
+    dots.appendChild(b);});
+  document.querySelectorAll('#vsw button').forEach(b=>b.onclick=()=>goView(b.dataset.v));
+  renderDz();
+}
+
+function goView(v){
+  st.region=v;
+  document.querySelectorAll('#vsw button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
+  if(v==='body')flyBox(VBOX,.92);
+  else if(v==='circ')flyBox(CBOX,.92);
+  else flyBox(ALLBOX,.9);}
+
+function flowChanged(){
+  const id=ORDER[st.flow.idx],m=D[id];
+  document.querySelectorAll('.fdot').forEach((d,i)=>d.classList.toggle('cur',i===st.flow.idx));
+  $('flowtxt').innerHTML=`<b>${HOUR[id][0]}时 · ${m.name}当令</b><span>${HOUR[id][1]} · ${m.wx}</span>`;
+  if(st.follow)flyBox(chainsBbox(m,st.region==='circ'),0.75);}
+$('btnPlay').onclick=()=>{
+  st.flow.on=!st.flow.on;
+  $('btnPlay').textContent=st.flow.on?'❚❚':'▶';
+  if(st.flow.on){st.flow.t=0;flowChanged();}else{
+    document.querySelectorAll('.fdot').forEach(d=>d.classList.remove('cur'));
+    $('flowtxt').innerHTML='<b>子午流注</b><span>十二时辰 · 气血流注循环</span>';}};
+
+/* ================= 病证处方库 ================= */
+function renderDz(){
+  const cats=['全部',...new Set(RXDB.map(d=>d.cat))];
+  $('dcats').innerHTML=cats.map(c=>`<span class="cchip${c===st.dzCat?' on':''}" data-c="${c}">${c}</span>`).join('');
+  $('dcats').querySelectorAll('.cchip').forEach(ch=>ch.onclick=()=>{
+    st.dzCat=ch.dataset.c;st.dzOpen=null;renderDz();});
+  const list=RXDB.filter(d=>(st.dzCat==='全部'||d.cat===st.dzCat)
+    &&(!st.dzQ||d.name.includes(st.dzQ)||d.note.includes(st.dzQ)||d.pts.includes(st.dzQ)));
+  if(!list.length){
+    $('dlist').innerHTML='<div style="font-size:11px;color:var(--sub);padding:8px 4px">未找到相关病证</div>';return;}
+  $('dlist').innerHTML=list.map(d=>{
+    const open=st.dzOpen===d.name;
+    return `<div class="dz${open?' open':''}" data-n="${d.name}">
+      <div class="dzh"><b>${d.name}</b><span class="ct">${d.cat}</span><span class="ar">${open?'▾':'▸'}</span></div>
+      ${open?`<div class="dzb">${d.pts.split(' ').map(p=>`<span class="pchip" data-p="${p}">${p}</span>`).join('')}
+        <button class="dload" data-n="${d.name}">📋 载入处方到画布</button></div>
+        <div class="dzn">治法：${d.note}</div>`:''}
+    </div>`;}).join('');
+  $('dlist').querySelectorAll('.dzh').forEach(h=>h.onclick=()=>{
+    const nm=h.parentElement.dataset.n;
+    st.dzOpen=st.dzOpen===nm?null:nm;renderDz();});
+  $('dlist').querySelectorAll('.pchip').forEach(p=>p.onclick=e=>{
+    e.stopPropagation();
+    const nd=findNodeView(p.dataset.p,false,1);
+    if(nd)selectPoint(nd);});
+  $('dlist').querySelectorAll('.dload').forEach(b=>b.onclick=e=>{
+    e.stopPropagation();
+    loadRxDb(RXDB.find(d=>d.name===b.dataset.n));});}
+
+$('dq').addEventListener('input',()=>{st.dzQ=$('dq').value.trim();st.dzOpen=null;renderDz();});
+
+function openDz(d){
+  setPanel(false);
+  st.dzCat='全部';st.dzQ='';$('dq').value='';st.dzOpen=d.name;
+  renderDz();
+  const el=document.querySelector(`.dz[data-n="${d.name}"]`);
+  if(el)setTimeout(()=>el.scrollIntoView({behavior:'smooth',block:'center'}),60);}
+
+function loadRxDb(d){
+  if(!st.showRx){st.showRx=true;syncOpt('showRx');$('rxbar').classList.add('show');}
+  const pts=d.pts.split(' ').map(nm=>findNodeView(nm,false,1)).filter(Boolean);
+  if(pts.length<2){toast('处方穴位未找到');return;}
+  st.rx=[];
+  for(let i=0;i<pts.length-1;i++)st.rx.push({a:pts[i],b:pts[i+1],label:d.name});
+  renderRx();
+  let b={x1:1e9,y1:1e9,x2:-1e9,y2:-1e9};
+  for(const p of pts){b.x1=Math.min(b.x1,p.x-40);b.y1=Math.min(b.y1,p.y-40);
+    b.x2=Math.max(b.x2,p.x+40);b.y2=Math.max(b.y2,p.y+40);}
+  flyBox(b,0.72);
+  toast('已载入「'+d.name+'」· '+pts.length+' 穴金链');}
+
+/* ================= AI 针灸助手 ================= */
+/* ── 大模型接口：智谱清言 / DeepSeek / 自定义（OpenAI 兼容）── */
+const LLM_KEY='jl_llm_v1';
+const PROV={
+zhipu:{label:'智谱清言',sub:'GLM · 有免费额度',
+  base:'https://open.bigmodel.cn/api/paas/v4/chat/completions',
+  models:['glm-4-flash','glm-4-flash-250414','glm-4-air-250414','glm-4-plus','glm-4-long'],
+  keyUrl:'https://open.bigmodel.cn/usercenter/apikeys',
+  note:'推荐 <b>glm-4-flash</b>：免费额度高、响应快，日常问答足够。'},
+deepseek:{label:'DeepSeek',sub:'chat / reasoner',
+  base:'https://api.deepseek.com/chat/completions',
+  models:['deepseek-chat','deepseek-reasoner'],
+  keyUrl:'https://platform.deepseek.com/api_keys',
+  note:'<b>deepseek-chat</b> 通用对话；<b>deepseek-reasoner</b> 推理更强但更慢。'},
+custom:{label:'自定义',sub:'OpenAI 兼容 / 代理',
+  base:'',models:[],keyUrl:'',
+  note:'填写任意 OpenAI 兼容的 <b>/chat/completions</b> 地址；浏览器直连被 CORS 拦截时，可指向自建代理。'}
+};
+const llm={provider:'zhipu',model:'glm-4-flash',modelBy:{},keys:{},bases:{},mode:'auto',stream:true};
+let aiHistory=[],aiAbort=null,aiBusy=false;
+
+function llmLoad(){
+  try{
+    const s=JSON.parse(localStorage.getItem(LLM_KEY)||'{}');
+    if(s&&typeof s==='object'){
+      llm.provider=PROV[s.provider]?s.provider:'zhipu';
+      llm.mode=(s.mode==='local'||s.mode==='online')?s.mode:'auto';
+      llm.stream=s.stream!==false;
+      llm.keys=s.keys||{};llm.bases=s.bases||{};llm.modelBy=s.modelBy||{};
+      llm.model=s.model||'';
+    }
+  }catch(e){}
+  if(!llm.model)llm.model=PROV[llm.provider].models[0]||'';
+}
+function llmSave(){try{localStorage.setItem(LLM_KEY,JSON.stringify(llm));}catch(e){}}
+function llmBase(p){p=p||llm.provider;return ((llm.bases[p]||'').trim()||PROV[p].base);}
+function llmKey(p){p=p||llm.provider;return ((llm.keys[p]||'').trim());}
+function llmModel(p){p=p||llm.provider;return ((llm.modelBy[p]||llm.model||PROV[p].models[0]||'').trim());}
+function llmReady(){return !!(llmKey()&&llmBase()&&llmModel());}
+function llmLabel(){
+  if(llm.mode==='local')return '本地知识引擎';
+  if(!llmReady())return '本地知识引擎 · 未配置 Key';
+  return PROV[llm.provider].label+' · '+llmModel();
+}
+function aiScroll(){const m=$('aiMsgs');m.scrollTop=m.scrollHeight;}
+function aiBusySet(on){
+  aiBusy=on;
+  const b=$('aiSend');b.textContent=on?'■ 停止':'发送';b.classList.toggle('stop',on);
+}
+function sysPrompt(){
+  const act=activeSector(),zi=ZI[act.idx],mid=zi[1];
+  return ['你是「经络循行图」网页内置的中医针灸知识助手，面向学习查询。',
+    '规则：',
+    '1. 只回答经络、腧穴、配穴、子午流注、补泻等针灸相关内容；涉及急重症、明确器质病变或用药问题，提示尽快就医。',
+    '2. 取穴只能从下方「取穴清单」中选择，超出清单请直接说明本图未收录。',
+    '3. 用简体中文，条理清晰，正文尽量不超过 300 字，不要输出 Markdown 表格。',
+    '4. 若给出配穴处方，必须最后单独一行按固定格式输出：【处方】穴位1 穴位2 穴位3（空格分隔、只写穴名、2-10 个）；不给处方时省略此行。',
+    '5. 不要重复免责声明。',
+    '当前时辰：'+zi[0]+'时（'+HOUR[mid][1]+'），当令经脉：'+D[mid].name+'。',
+    '取穴清单：'+Object.keys(nodeIdx).join(' ')].join('\n');
+}
+async function llmRequest(stream,text,signal){
+  const res=await fetch(llmBase(),{
+    method:'POST',signal:signal,
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+llmKey()},
+    body:JSON.stringify({
+      model:llmModel(),
+      messages:[{role:'system',content:sysPrompt()}].concat(aiHistory.slice(-8)).concat([{role:'user',content:text}]),
+      temperature:0.5,
+      stream:!!stream
+    })
+  });
+  if(!res.ok){
+    let raw='';try{raw=await res.text();}catch(e){}
+    let msg=raw;
+    try{const j=JSON.parse(raw);msg=(j.error&&(j.error.message||j.error.code))||j.message||raw;}catch(e){}
+    throw new Error('HTTP '+res.status+(msg?' · '+String(msg).slice(0,180):''));
+  }
+  return res;
+}
+async function llmChat(text,onDelta,signal){
+  const useStream=!!llm.stream;
+  const res=await llmRequest(useStream,text,signal);
+  if(!useStream||!res.body||!res.body.getReader){
+    const j=await res.json();
+    const c=((((j.choices||[])[0]||{}).message)||{}).content||'';
+    if(c)onDelta(c);
+    return c;
+  }
+  const rd=res.body.getReader(),dec=new TextDecoder();
+  let buf='',all='';
+  for(;;){
+    const r=await rd.read();
+    if(r.done)break;
+    buf+=dec.decode(r.value,{stream:true});
+    const parts=buf.split('\n');buf=parts.pop();
+    for(let i=0;i<parts.length;i++){
+      let ln=parts[i].trim();
+      if(!ln||ln.charAt(0)===':')continue;
+      if(ln.indexOf('data:')!==0)continue;
+      const d=ln.slice(5).trim();
+      if(!d||d==='[DONE]')continue;
+      let j=null;try{j=JSON.parse(d);}catch(e){continue;}
+      const ch=(j.choices||[])[0]||{};
+      const c=(ch.delta&&ch.delta.content)||'';
+      if(c){all+=c;onDelta(c);}
+    }
+  }
+  return all;
+}
+const _ptNames=Object.keys(nodeIdx).filter(n=>n&&n.length>=2).sort((a,b)=>b.length-a.length);
+const _ptRe=new RegExp('('+_ptNames.join('|')+')','g');
+function hEsc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function mdLite(src){
+  let s=hEsc(src);
+  s=s.replace(_ptRe,n=>'<span class="achip" data-act="loc" data-n="'+n+'">'+n+'</span>');
+  s=s.replace(/^#{1,6}\s*(.+)$/gm,'<div class="mdh">$1</div>');
+  s=s.replace(/^[ \t]*[-*•]\s+(.+)$/gm,'<div class="li">$1</div>');
+  s=s.replace(/^[ \t]*(\d+)[.、)]\s*(.+)$/gm,'<div class="li">$2</div>');
+  s=s.replace(/\*\*([^*\n]+)\*\*/g,'<b>$1</b>');
+  s=s.replace(/`([^`\n]+)`/g,'<code>$1</code>');
+  s=s.replace(/【处方】/g,'<span class="rxline">📋 智能配伍处方</span>');
+  s=s.replace(/\n{3,}/g,'\n\n').replace(/\n/g,'<br>');
+  return s;
+}
+function extractRx(text){
+  const m=/【处方】\s*([^\n]+)/.exec(text||'');
+  if(!m)return null;
+  const names=m[1].split(/[\s、,，·＋+\/|]+/)
+    .map(s=>s.replace(/[（(].*$/,'').replace(/穴$/,'').trim())
+    .filter(n=>n&&nodeIdx[n]);
+  const uniq=[];names.forEach(n=>{if(uniq.indexOf(n)<0)uniq.push(n);});
+  return uniq.length>=2?uniq.slice(0,10):null;
+}
+function llmHtml(text){
+  let h=mdLite(text);
+  const rx=extractRx(text);
+  if(rx)h+='<div class="abtns"><button class="abtn" data-act="loadrxnames" data-n="'+rx.join(' ')+'">📋 载入画布组方（'+rx.length+' 穴）</button></div>';
+  h+='<div class="mstat">🤖 '+hEsc(llmLabel())+' · 生成内容可能有误，请对照教材并由执业医师辨证</div>';
+  return h;
+}
+function loadRxNames(names,label){
+  if(!st.showRx){st.showRx=true;syncOpt('showRx');$('rxbar').classList.add('show');}
+  const pts=[],seen={};
+  (names||[]).forEach(nm=>{
+    if(seen[nm])return;
+    const nd=findNodeView(nm,false,1);
+    if(nd){seen[nm]=1;pts.push(nd);}
+  });
+  if(pts.length<2){toast('未匹配到足够的穴位');return;}
+  st.rx=[];
+  for(let i=0;i<pts.length-1;i++)st.rx.push({a:pts[i],b:pts[i+1],label:label||'AI 处方'});
+  renderRx();
+  let b={x1:1e9,y1:1e9,x2:-1e9,y2:-1e9};
+  for(const p of pts){
+    b.x1=Math.min(b.x1,p.x-40);b.y1=Math.min(b.y1,p.y-40);
+    b.x2=Math.max(b.x2,p.x+40);b.y2=Math.max(b.y2,p.y+40);}
+  flyBox(b,0.7);
+  toast('已载入 '+(label||'AI 处方')+' · '+pts.length+' 穴');
+}
+async function onlineReply(text){
+  const el=pushMsg('bot','<span class="tdot">●</span><span class="tdot" style="animation-delay:.2s">●</span><span class="tdot" style="animation-delay:.4s">●</span>');
+  aiBusySet(true);
+  const ctrl=new AbortController();aiAbort=ctrl;
+  let acc='',dirty=false,timer=null;
+  function paint(){timer=null;dirty=false;el.innerHTML=mdLite(acc)+'<span class="curl"></span>';aiScroll();}
+  function schedule(){if(dirty)return;dirty=true;timer=setTimeout(paint,90);}
+  try{
+    const full=await llmChat(text,d=>{acc+=d;schedule();},ctrl.signal);
+    if(timer){clearTimeout(timer);timer=null;}
+    el.innerHTML=llmHtml(full);
+    aiHistory.push({role:'user',content:text});
+    aiHistory.push({role:'assistant',content:full});
+    if(aiHistory.length>12)aiHistory=aiHistory.slice(-12);
+  }catch(err){
+    if(timer){clearTimeout(timer);timer=null;}
+    const aborted=err&&err.name==='AbortError';
+    const why=aborted?'已停止生成。':('在线模型调用失败：'+((err&&err.message)||err));
+    if(aborted||llm.mode==='online'){
+      el.innerHTML=(acc?mdLite(acc):'')+'<div class="aierr">⚠️ '+hEsc(why)+'</div>';
+    }else{
+      el.innerHTML=(acc?mdLite(acc):'')+'<div class="aierr">⚠️ '+hEsc(why)+'，已回退本地知识库：</div>'+aiReply(text);
+    }
+  }finally{
+    aiBusySet(false);aiAbort=null;aiScroll();
+  }
+}
+function cfgStat(kind,txt){
+  const el=$('cfgStat');
+  el.className='cstat'+(kind?' '+kind:'')+(txt?' show':'');
+  el.textContent=txt||'';
+}
+function cfgSync(){
+  const p=llm.provider;
+  llm.keys[p]=$('cfgKey').value.trim();
+  llm.bases[p]=$('cfgBase').value.trim();
+  const m=$('cfgModel').value.trim()||PROV[p].models[0]||'';
+  llm.model=m;llm.modelBy[p]=m;
+  llm.mode=$('cfgMode').value;
+  llm.stream=$('cfgStream').value==='1';
+}
+function cfgRender(){
+  const p=llm.provider,pr=PROV[p];
+  $('cfgProvs').innerHTML=Object.keys(PROV).map(k=>
+    '<div class="prov'+(k===p?' on':'')+'" data-p="'+k+'"><b>'+PROV[k].label+'</b><span>'+PROV[k].sub+'</span></div>').join('');
+  const items=$('cfgProvs').querySelectorAll('.prov');
+  for(let i=0;i<items.length;i++)items[i].onclick=function(){
+    cfgSync();
+    llm.provider=this.dataset.p;
+    llm.model=llmModel(llm.provider);
+    llmSave();cfgRender();toast('已切换到 '+PROV[llm.provider].label);
+  };
+  $('cfgModels').innerHTML=(pr.models||[]).map(m=>'<option value="'+m+'"></option>').join('');
+  $('cfgKey').value=llm.keys[p]||'';
+  $('cfgModel').value=llmModel(p);
+  $('cfgBase').value=llm.bases[p]||'';
+  $('cfgBase').placeholder=pr.base||'https://.../chat/completions';
+  $('cfgMode').value=llm.mode;
+  $('cfgStream').value=llm.stream?'1':'0';
+  $('cfgKeyNote').innerHTML=(pr.note||'')+(pr.keyUrl?' <a href="'+pr.keyUrl+'" target="_blank" rel="noopener">获取 '+pr.label+' API Key ↗</a>':'');
+  cfgStat('','');
+}
+function updateAiMode(){
+  const on=!!(llm.mode!=='local'&&llmReady());
+  $('aiMode').textContent=llmLabel();
+  $('aiHead').classList.toggle('off',!on);
+  $('aiWarn').classList.toggle('show',!on&&llm.mode!=='local');
+  $('btnAI').classList.toggle('act',!on&&llm.mode!=='local');
+}
+$('aiCfgBtn').onclick=function(){
+  const on=$('aiCfg').classList.toggle('show');
+  if(on)cfgRender();
+};
+$('aiCfgClose').onclick=function(){$('aiCfg').classList.remove('show');};
+$('cfgEye').onclick=function(){
+  const i=$('cfgKey');i.type=(i.type==='password')?'text':'password';
+};
+$('cfgSave').onclick=function(){
+  cfgSync();llmSave();updateAiMode();
+  cfgStat('ok','已保存 · 当前：'+llmLabel());
+  toast('模型设置已保存');
+};
+$('cfgTest').onclick=async function(){
+  cfgSync();llmSave();updateAiMode();
+  if(!llmKey()||!llmBase()||!llmModel()){cfgStat('err','请先填写 API Key 与模型名');return;}
+  cfgStat('','正在测试连接…');
+  try{
+    const res=await llmRequest(false,'请只回复两个字：正常',null);
+    const j=await res.json();
+    const c=((((j.choices||[])[0]||{}).message)||{}).content||'';
+    cfgStat('ok','✅ 连接成功'+(c?'，模型回复：'+String(c).trim().slice(0,40):''));
+  }catch(e){
+    const msg=(e&&e.message)||String(e);
+    cfgStat('err','❌ 连接失败：'+msg+(/Failed to fetch|NetworkError/i.test(msg)?'（多为浏览器跨域限制，可改用自建代理地址）':''));
+  }
+};
+function setChips(arr){
+  $('aiChips').innerHTML=(arr||[]).map(c=>`<span class="achip" data-send="${c}">${c}</span>`).join('');
+}
+function pushMsg(who,html){
+  const d=document.createElement('div');d.className='am '+who;
+  if(who==='user')d.textContent=html;else d.innerHTML=html;
+  $('aiMsgs').appendChild(d);
+  $('aiMsgs').scrollTop=$('aiMsgs').scrollHeight;
+  return d;
+}
+function botSay(html){
+  const el=pushMsg('bot','<span class="tdot">●</span><span class="tdot" style="animation-delay:.2s">●</span><span class="tdot" style="animation-delay:.4s">●</span>');
+  setTimeout(()=>{el.innerHTML=html;$('aiMsgs').scrollTop=$('aiMsgs').scrollHeight;},340+Math.random()*360);
+}
+function aiUserSend(text){
+  pushMsg('user',text);
+  if(llm.mode==='local'||!llmReady()){
+    if(llm.mode==='online'){
+      pushMsg('bot','<div class="aierr">⚠️ 尚未配置大模型 API Key，请点助手右上角 ⚙ 填写，或把「回答方式」改为自动 / 本地知识库。</div>');
+      return;
+    }
+    setTimeout(()=>botSay(aiReply(text)),60);
+    return;
+  }
+  onlineReply(text);
+}
+function aiSend(){
+  if(aiBusy)return;
+  const v=$('aiInput').value.trim();if(!v)return;
+  $('aiInput').value='';aiUserSend(v);
+}
+$('aiSend').onclick=function(){
+  if(aiBusy){if(aiAbort){try{aiAbort.abort();}catch(e){}}return;}
+  aiSend();
+};
+$('aiInput').addEventListener('keydown',e=>{if(e.key==='Enter')aiSend();});
+$('aiChips').addEventListener('click',e=>{
+  const c=e.target.closest('[data-send]');if(!c)return;
+  if(aiBusy)return;
+  aiUserSend(c.dataset.send);
+});
+
+function canonQ(q){for(const k in SYN)q=q.split(k).join(SYN[k]);return q;}
+function matchDz(q){
+  const cq=canonQ(q);
+  const scored=[];
+  for(const d of RXDB){
+    const core=d.name.replace(/（.*?）/g,'');
+    let s=0;
+    if(cq.includes(core)&&core.length>=2)s+=10;
+    else if(core.includes(cq)&&cq.length>=2)s+=6;
+    if(s>0)scored.push({d,s});
+  }
+  if(!scored.length)return null;
+  scored.sort((a,b)=>b.s-a.s);
+  const top=scored.filter(x=>x.s>=scored[0].s&&x.s>=6);
+  if(top.length>1&&scored[0].s<10)return top.slice(0,4).map(x=>x.d);
+  return scored[0].d;
+}
+function matchPoint(q){
+  const names=Object.keys(nodeIdx);
+  let best=null;
+  for(const nm of names){
+    if(nm.length<2)continue;
+    if(q===nm)return nm;
+    if(q.includes(nm)&&(!best||nm.length>best.length))best=nm;
+  }
+  return best;
+}
+function matchMeridian(q){
+  for(const id in D){const m=D[id];
+    if(q.includes(m.name)||q.includes(m.abbr+'经')||q===m.abbr)return id;}
+  for(const id in D2){if(q.includes(D2[id].name))return id;}
+  return null;
+}
+
+function introHtml(){
+  setChips(DEFAULT_CHIPS);
+  return `您好，我是针灸智能助手 🌿<br>可以为您：<br>① <b>按症状推荐处方</b> —— 直接描述不适，如「我偏头痛」「最近失眠」<br>② <b>讲解穴位</b> —— 如「足三里有什么用」「内关怎么配伍」<br>③ <b>经脉 · 子午流注 · 子母补泻</b> —— 如「胃经」「现在什么时辰」「肾虚补什么穴」<br>④ 推荐结果可<b>一键载入画布</b>，以金色连线查看组方<div class="ptn" style="margin-top:6px">⚠️ 内容仅供学习参考，针刺须由执业医师操作，急重症请立即就医。</div>`;
+}
+function dzReply(d){
+  setChips(DEFAULT_CHIPS);
+  const pts=d.pts.split(' ');
+  let h=`针对「<b>${d.name}</b>」（${d.cat}），推荐处方：`;
+  h+=`<div class="ptbox"><div class="ptl">${pts.map(p=>`<span class="achip" data-act="loc" data-n="${p}">${p}</span>`).join('')}</div>`;
+  h+=`<div class="ptn">治法：${d.note}</div></div>`;
+  const extra=[];
+  for(const p of pts.slice(0,2))
+    for(const pe of(PE[p]||[]).slice(0,2))
+      if(!pts.includes(pe[0]))extra.push(`${p}＋${pe[0]}（${pe[1]}）`);
+  if(extra.length)h+=`<div class="ptn">加减配伍：${extra.slice(0,4).join('；')}</div>`;
+  h+=`<div class="ptn">调护建议：${ADVICE[d.cat]||''}</div>`;
+  h+=`<div class="abtns"><button class="abtn" data-act="loadrx" data-n="${d.name}">📋 在画布上查看处方连线</button></div>`;
+  return h;
+}
+function chooserHtml(list){
+  setChips(list.map(d=>d.name));
+  return `这个问题有几种常见情况，请问更接近哪一种？点击下方选项，或直接补充描述（部位、性质、时间）：`;
+}
+function ptReply(name){
+  setChips(DEFAULT_CHIPS);
+  const nd=findNodeView(name,false,1);
+  if(!nd)return '未找到该穴位数据。';
+  const mer=nd.mer;
+  let h=`<b style="font-size:14px">${name}</b>　${mer.name}${nd.tag?' · '+nd.tag.split('·').join(' · '):''}`;
+  if(nd.wux)h+=` · ${nd.wux.sh}穴属${nd.wux.el}`;
+  if(NOTE[name])h+=`<div class="ptn" style="margin-top:6px;color:#c4d4ea">主治：${NOTE[name]}</div>`;
+  if(LOC[name])h+=`<div class="ptn">国标定位：${LOC[name]}</div>`;
+  const bp=BMIDX[name];
+  if(bp){const o=bp.a[1]===name?bp.b[1]:bp.a[1];
+    h+=`<div class="ptn">八脉交会：配<b>${o}</b>，合治${bp.zhu}</div>`;}
+  const pes=PE[name]||[];
+  if(pes.length)h+=`<div class="ptn">常用配伍：${pes.slice(0,4).map(p=>`<span class="achip" data-act="loc" data-n="${p[0]}">${p[0]}</span>`).join(' ')}</div>`;
+  h+=`<div class="abtns"><button class="abtn" data-act="loc" data-n="${name}">🎯 定位到画布</button>`;
+  if(pes.length)h+=`<button class="abtn" data-act="pair" data-n="${name}">➕ 与${pes[0][0]}组方（${pes[0][1]}）</button>`;
+  h+=`</div>`;
+  return h;
+}
+function merReply(id){
+  setChips(DEFAULT_CHIPS);
+  const m=(id in D)?D[id]:D2[id];
+  const npts=m.pts?m.pts.split(';').length:(m.line?m.line.split(' ').length:0);
+  let h=`<b style="color:${m.color}">${m.name}</b>${HOUR[id]?` · ${HOUR[id][0]}时当令（${HOUR[id][1]}）`:''} · ${m.wx}`;
+  h+=`<div class="ptn">共 ${npts} 穴。${MBRIEF[id]||''}</div>`;
+  if(YUAN[id])h+=`<div class="ptn">原穴「${YUAN[id]}」，络穴「${LUOPT[id]}」；急症可选郄穴。</div>`;
+  h+=`<div class="abtns"><button class="abtn" data-act="focus" data-n="${id}">🔍 聚焦此经</button></div>`;
+  return h;
+}
+function fallbackHtml(){
+  setChips(DEFAULT_CHIPS);
+  return `我暂时没有完全理解您的描述 😥<div class="ptn">您可以：<br>· 描述<b>症状</b>（如「偏头痛」「睡不着」「腰痛」「拉肚子」）<br>· 询问<b>穴位</b>（如「太冲有什么用」）<br>· 询问<b>经脉 / 时辰 / 虚实补泻</b><br>也可以点击下方快捷提问👇</div>`;
+}
+
+function aiReply(raw){
+  const q=(raw||'').toLowerCase().replace(/[？?！!。，,、\s·]/g,'');
+  if(!q)return introHtml();
+  if(/^(你好|您好|hi|hello|嗨|哈喽|在吗)/.test(q))return introHtml();
+  if(/(谢谢|感谢|多谢|再见|拜拜)/.test(q))
+    return '不客气 🙏 祝早日康复。<br>有其他症状或穴位问题，随时问我。';
+  if(/(处方|组方)/.test(q)&&st.rx.length)
+    return '当前画布上的处方：<div class="ptbox">'+st.rx.map(p=>`<div class="ptn">● ${p.a.name} ＋ ${p.b.name}（${p.label}）</div>`).join('')+'</div><div class="ptn">可在左下角处方面板中删除或清空。</div>';
+  if(/(现在|当前|几点|时辰|当令|流注|子午)/.test(q)){
+    const act=activeSector(),zi=ZI[act.idx],id=zi[1],m=D[id];
+    const z=zimu(id);
+    let h=`现在是<b>${zi[0]}时（${HOUR[id][1]}）</b>，气血流注 <b style="color:${m.color}">${m.name}</b> 当令。`;
+    h+=`<div class="ptn">此时本经气血最旺，按揉本经穴位事半功倍；原穴「${YUAN[id]}」可轻揉 3–5 分钟。${z?`虚证宜补「${z.mu.name}」，实证宜泻「${z.zi.name}」。`:''}</div>`;
+    h+=`<div class="abtns"><button class="abtn" data-act="focus" data-n="${id}">🔍 聚焦当令经脉</button></div>`;
+    return h;}
+  const zm=/(肺|大肠|胃|脾|心包|心|小肠|膀胱|肾|三焦|胆|肝)经?(?:之)?(虚|实)/.exec(q);
+  if(zm){
+    const mid=ORG2MER[zm[1]],z=zimu(mid);
+    if(z){const m=D[mid];
+      return `${m.name}属<b>${z.E}</b>：<br>虚则补其母（${MU_EL[z.E]}）→ <b>${z.mu.name}</b>（${z.mu.sh}穴）<br>实则泻其子（${SHENG[z.E]}）→ <b>${z.zi.name}</b>（${z.zi.sh}穴）<div class="ptn">临床虚寒常配艾灸、实热可点刺，请由医师辨证后操作。</div><div class="abtns"><button class="abtn" data-act="loc" data-n="${z.mu.name}">🎯 ${z.mu.name}</button><button class="abtn" data-act="loc" data-n="${z.zi.name}">🎯 ${z.zi.name}</button></div>`;}}
+  const dz=matchDz(q);
+  if(dz)return Array.isArray(dz)?chooserHtml(dz):dzReply(dz);
+  const pn=matchPoint(q);
+  if(pn)return ptReply(pn);
+  const mid=matchMeridian(q);
+  if(mid)return merReply(mid);
+  return fallbackHtml();
+}
+
+$('aiMsgs').addEventListener('click',e=>{
+  const el=e.target.closest('[data-act]');if(!el)return;
+  const act=el.dataset.act,n=el.dataset.n;
+  if(act==='loc'){
+    const nd=findNodeView(n,false,1);
+    if(nd){selectPoint(nd);toast('已定位：'+n);}
+  }else if(act==='loadrx'){
+    const d=RXDB.find(x=>x.name===n);
+    if(d)loadRxDb(d);
+  }else if(act==='loadrxnames'){
+    loadRxNames((n||'').split(/[\s、，,]+/).filter(Boolean),'AI 处方');
+  }else if(act==='focus'){
+    const m=(D[n]||D2[n]);
+    if(m){if(m.circOnly&&st.region!=='circ')goView('circ');
+      if(st.selMer===m)st.selMer=null;
+      selectMer(m);}
+  }else if(act==='pair'){
+    const nd=findNodeView(n,false,1),pe=(PE[n]||[])[0];
+    if(nd&&pe){
+      if(!st.showRx){st.showRx=true;syncOpt('showRx');$('rxbar').classList.add('show');}
+      addRx(nd,pe[0],pe[1]);
+      toast('已加入处方：'+n+'＋'+pe[0]);}
+  }
+});
+
+let aiInit=false;
+function toggleAI(on){
+  $('aiWin').classList.toggle('show',on);
+  $('btnAI').classList.toggle('on',on);
+  document.body.classList.toggle('aiopen',on);
+  if(on&&!aiInit){aiInit=true;botSay(introHtml());}
+}
+
+$('btnAI').onclick=()=>toggleAI(!$('aiWin').classList.contains('show'));
+$('aiClose').onclick=()=>toggleAI(false);
+
+/* ================= 导出 ================= */
+let toastTimer=null;
+function toast(msg){const t=$('toast');t.textContent=msg;t.classList.add('show');
+  clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),2400);}
+
+function exportPNG(){
+  const a=document.createElement('a');
+  a.download='经络循行图_'+new Date().toLocaleDateString('zh-CN').replace(/\//g,'-')+'.png';
+  a.href=cv.toDataURL('image/png');
+  a.click();
+  toast('已导出 PNG（当前视图截图 · 含穴位名称）');}
+
+class PathRec{
+  constructor(){this.d='';}
+  moveTo(x,y){this.d+=`M${Math.round(x*10)/10} ${Math.round(y*10)/10}`;}
+  lineTo(x,y){this.d+=`L${Math.round(x*10)/10} ${Math.round(y*10)/10}`;}
+  bezierCurveTo(x1,y1,x2,y2,x,y){this.d+=`C${Math.round(x1*10)/10} ${Math.round(y1*10)/10} ${Math.round(x2*10)/10} ${Math.round(y2*10)/10} ${Math.round(x*10)/10} ${Math.round(y*10)/10}`;}}
+
+function exportSVG(){
+  const P=90,x1=ALLBOX.x1-P,y1=ALLBOX.y1-P,w=ALLBOX.x2-ALLBOX.x1+2*P,h=ALLBOX.y2-ALLBOX.y1+2*P;
+  const out=[],defs=[];
+  const R=v=>Math.round(v*10)/10;
+  const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+  out.push(`<rect x="${x1}" y="${y1}" width="${w}" height="${h}" fill="#070b14"/>`);
+  let gd='';
+  for(let x=Math.ceil(x1/200)*200;x<x1+w;x+=200)gd+=`M${x} ${y1}V${y1+h}`;
+  for(let y=Math.ceil(y1/200)*200;y<y1+h;y+=200)gd+=`M${x1} ${y}H${x1+w}`;
+  out.push(`<path d="${gd}" stroke="rgba(110,150,220,.10)" stroke-width="1" fill="none"/>`);
+  for(const cx of [0,1500]){
+    const rec=new PathRec();
+    bodyHalf(rec,cx,1);bodyHalf(rec,cx,-1);
+    out.push(`<path d="${rec.d}" fill="none" stroke="rgba(143,180,220,.4)" stroke-width="2.5"/>`);
+    out.push(`<text x="${cx}" y="${y1+46}" fill="rgba(150,185,225,.65)" font-size="30" text-anchor="middle" font-weight="600">${cx?'背 面 观':'前 面 观'}</text>`);}
+  for(const r of [R_RD,R_DAI,R_W,R_Q])
+    out.push(`<circle cx="${CIR.x}" cy="${CIR.y}" r="${r}" fill="none" stroke="rgba(140,180,240,.12)" stroke-width="1.5"/>`);
+  out.push(`<circle cx="${CIR.x}" cy="${CIR.y}" r="${R_M}" fill="none" stroke="rgba(160,200,255,.18)" stroke-width="2.5"/>`);
+  for(let i=0;i<12;i++){const a=ziAng(i),c=Math.cos(a),s=Math.sin(a);
+    out.push(`<line x1="${R(CIR.x+(R_M-24)*c)}" y1="${R(CIR.y+(R_M-24)*s)}" x2="${R(CIR.x+(R_M+44)*c)}" y2="${R(CIR.y+(R_M+44)*s)}" stroke="rgba(160,200,255,.3)" stroke-width="2"/>`);}
+  out.push(`<text x="${CIR.x}" y="${CIR.y-R_M-236}" fill="#eef6ff" font-size="52" text-anchor="middle" font-weight="600" font-family="Songti SC,STSong,SimSun,serif">經 絡 圓 圖</text>`);
+  out.push(`<text x="${CIR.x}" y="${CIR.y-R_M-196}" fill="rgba(150,180,220,.75)" font-size="17" text-anchor="middle">十二正經如環流注 · 任督小周天 · 奇經八脈</text>`);
+  for(let i=0;i<12;i++){const a=ziAng(i)+Math.PI/12;
+    const x=CIR.x+(R_M+112)*Math.cos(a),y=CIR.y+(R_M+112)*Math.sin(a);
+    out.push(`<text x="${R(x)}" y="${R(y+16)}" fill="#deecff" font-size="46" text-anchor="middle" font-weight="600" font-family="Songti SC,STSong,SimSun,serif">${ZI[i][0]}</text>`);}
+  for(const ch of chains){const m=ch.mer;if(!m.on)continue;
+    const stl=ch.style||{};
+    let d;
+    if(ch.path)d='M'+ch.path.map(p=>`${R(p.x)} ${R(p.y)}`).join(' L');
+    else{d=`M${R(ch.pts[0].x)} ${R(ch.pts[0].y)}`;
+      for(const g of ch.segs)d+=g.q?` Q${R(g.c.x)} ${R(g.c.y)} ${R(g.b.x)} ${R(g.b.y)}`:` L${R(g.b.x)} ${R(g.b.y)}`;}
+    out.push(`<path d="${d}" fill="none" stroke="${m.color}" stroke-width="${stl.w||(ch.branch?1.6:2.2)}" ${stl.dash?`stroke-dasharray="${stl.dash}"`:''} opacity="${stl.alpha||1}" stroke-linejoin="round" stroke-linecap="round"/>`);}
+  let gi=0;
+  const svgBridge=(na,nb,ca,cb,ctrl,w,dash)=>{
+    const id=`g${gi++}`;
+    defs.push(`<linearGradient id="${id}" gradientUnits="userSpaceOnUse" x1="${R(na.x)}" y1="${R(na.y)}" x2="${R(nb.x)}" y2="${R(nb.y)}"><stop offset="0" stop-color="${ca}"/><stop offset="1" stop-color="${cb}"/></linearGradient>`);
+    out.push(`<path d="M${R(na.x)} ${R(na.y)} Q${R(ctrl.x)} ${R(ctrl.y)} ${R(nb.x)} ${R(nb.y)}" fill="none" stroke="url(#${id})" stroke-width="${w}" ${dash?`stroke-dasharray="${dash}"`:''} opacity=".55"/>`);};
+  if(st.showConn){
+    for(const c of CONN){
+      const ma=D[c[0]],mb=D[c[2]];
+      for(const side of [1,-1]){
+        const na=findPt(c[0],c[1],side),nb=findPt(c[2],c[3],side);
+        if(na&&nb)svgBridge(na,nb,ma.color,mb.color,connCtrl(na,nb,side),1.6,'10,9');}
+      const ca=circNode(c[0],c[1]),cb=circNode(c[2],c[3]);
+      if(ca&&cb)svgBridge(ca,cb,ma.color,mb.color,bridgeCtrl(ca,cb,34),1.6,'10,9');}
+    for(const c of CIRC_EXTRA){
+      const ca=circNode(c[0],c[1]),cb=circNode(c[2],c[3]);
+      if(ca&&cb)svgBridge(ca,cb,D[c[0]].color,D[c[2]].color,bridgeCtrl(ca,cb,26),1.6,'10,9');}
+    for(const L of QIAO_LINKS)if(L[0]&&L[1])svgBridge(L[0],L[1],L[0].mer.color,'#ffffff',bridgeCtrl(L[0],L[1],14),1.4,'10,9');
+  }
+  if(st.showBamaio)for(const p of BM){
+    const ma=D[p.a[0]],mb=D[p.b[0]];
+    for(const side of [1,-1]){
+      const na=findPt(p.a[0],p.a[1],side),nb=findPt(p.b[0],p.b[1],side);
+      if(na&&nb)svgBridge(na,nb,ma.color,mb.color,connCtrlBm(na,nb),1.8,'10,7');}
+    const ca=circNode(p.a[0],p.a[1]),cb=circNode(p.b[0],p.b[1]);
+    if(ca&&cb){
+      const c2=bmCircCtrl(ca,cb),m=qbez(ca,c2,cb,.5);
+      svgBridge(ca,cb,ma.color,mb.color,c2,1.8,'10,7');
+      out.push(`<text x="${R(m.x)}" y="${R(m.y)}" fill="#ffd166" font-size="15" text-anchor="middle">${esc(p.a[1]+'↔'+p.b[1])}</text>`);}}
+  if(st.showLuo)for(const L of LUO){if(!L.to)continue;
+    const mA=D[L.from[0]],mB=D[L.to[0]];
+    for(const side of[1,-1]){
+      const na=findPt(L.from[0],L.from[1],side),nb=findPt(L.to[0],L.to[1],side);
+      if(na&&nb)svgBridge(na,nb,mA.color,mB.color,connCtrlBm(na,nb),1.2,'4,5');}
+    const ca=circNode(L.from[0],L.from[1]),cb=circNode(L.to[0],L.to[1]);
+    if(ca&&cb)svgBridge(ca,cb,mA.color,mB.color,bmCircCtrl(ca,cb),1.2,'4,5');}
+  for(const p of st.rx)svgBridge(p.a,p.b,'#ffd166','#ffd166',connCtrlBm(p.a,p.b),2.4,null);
+  for(const n of nodes){const m=n.mer;if(!m.on)continue;
+    const r=n.lvl===2?6:n.lvl===1?4.4:3.3;
+    const wx=st.showWux&&n.wux;
+    const ring=wx?WUX[n.wux.el]:(n.lvl===2?'#ffffff':m.color);
+    const fill=n.lvl===2?'#ffffff':(wx?WUX[n.wux.el]:m.color);
+    if(st.showBamaio&&BMIDX[n.name])
+      out.push(`<circle cx="${R(n.x)}" cy="${R(n.y)}" r="${r*1.75}" fill="none" stroke="rgba(255,209,102,.75)" stroke-width="1.3"/>`);
+    out.push(`<circle cx="${R(n.x)}" cy="${R(n.y)}" r="${r}" fill="${fill}" stroke="${ring}" stroke-width="1.7"/>`);
+    out.push(`<text x="${R(n.x+r*1.7)}" y="${R(n.y+4.5)}" fill="${n.lvl===2?'#fff':(wx?WUX[n.wux.el]:m.color)}" font-size="13.5" paint-order="stroke" stroke="rgba(5,8,16,.85)" stroke-width="3">${esc(n.name)}</text>`);}
+  const lx=x1+40,ly=y1+h-46;
+  if(st.showWux){
+    let wt='<tspan fill="rgba(200,220,245,.8)">五输五行：</tspan>';
+    for(const e of ['木','火','土','金','水'])wt+=`<tspan fill="${WUX[e]}"> ●${e}</tspan>`;
+    out.push(`<text x="${lx}" y="${ly-26}" font-size="16">${wt}</text>`);}
+  out.push(`<text x="${lx}" y="${ly}" fill="rgba(200,220,245,.7)" font-size="16"><tspan fill="#fff">●</tspan> 交会/募穴  <tspan fill="#ffd76e">●</tspan> 特定穴  <tspan fill="#54d99a">●</tspan> 经穴  <tspan fill="#ffd166">◎</tspan> 八脉交会  <tspan fill="rgba(160,200,255,.9)">┄</tspan> 十五络脉</text>`);
+  const svg=`<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" viewBox="${x1} ${y1} ${w} ${h}" width="${R(w)}" height="${R(h)}" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif">\n<defs>${defs.join('')}</defs>\n${out.join('\n')}\n</svg>`;
+  const blob=new Blob([svg],{type:'image/svg+xml;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download='经络循行图.svg';a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),4000);
+  toast('已导出 SVG 全图（矢量 · 含全部穴位名称）');}
+
+$('exPng').onclick=exportPNG;
+$('exSvg').onclick=exportSVG;
+
+/* 搜索（穴位 / 经脉 / 病证） */
+const q=$('q'),sug=$('sug');
+q.addEventListener('input',()=>{
+  const v=q.value.trim();
+  if(!v){sug.classList.remove('show');return;}
+  const hits=[];
+  for(const n of nodes){if(n.name.includes(v)&&!hits.find(h=>h.name===n.name))hits.push(n);
+    if(hits.length>=12)break;}
+  for(const m of mers)if(m.name.includes(v)||m.abbr.includes(v))hits.push({mer:m});
+  for(const d of RXDB)
+    if(hits.length<12&&(d.name.includes(v)||d.note.includes(v)||d.pts.includes(v)))hits.push({dz:d});
+  if(!hits.length){sug.innerHTML='<div class="none">未找到相关内容</div>';sug.classList.add('show');return;}
+  sug.innerHTML=hits.slice(0,12).map((h,i)=>{
+    if(h.dz)return `<div class="it" data-i="${i}"><span>📋</span>${h.dz.name}<span class="m">病证 · ${h.dz.cat}</span></div>`;
+    if(h.name)return `<div class="it" data-i="${i}"><span style="width:8px;height:8px;border-radius:50%;background:${h.mer.color};display:inline-block"></span>${h.name}<span class="m">${h.mer.name}</span></div>`;
+    return `<div class="it" data-i="${i}"><span style="width:8px;height:8px;border-radius:50%;background:${h.mer.color};display:inline-block"></span>${h.mer.name}<span class="m">${h.mer.wx}</span></div>`;
+  }).join('');
+  const items=[...sug.querySelectorAll('.it')];
+  items.forEach((el,i)=>el.onclick=()=>{
+    const h=hits[i];sug.classList.remove('show');q.value='';
+    if(h.dz){openDz(h.dz);return;}
+    if(h.name){selectPoint(h);return;}
+    if(h.mer.circOnly&&st.region!=='circ')goView('circ');
+    selectMer(h.mer);});
+  sug.classList.add('show');});
+q.addEventListener('keydown',e=>{if(e.key==='Escape'){q.value='';sug.classList.remove('show');q.blur();}});
+document.addEventListener('click',e=>{if(!e.target.closest('.search'))sug.classList.remove('show');});
+
+/* 其他控件 */
+$('zi').onclick=()=>zoomAt(W/2,H/2,1.3);
+$('zo').onclick=()=>zoomAt(W/2,H/2,1/1.3);
+$('zf').onclick=()=>goView('all');
+$('btnHelp').onclick=()=>$('help').classList.add('show');
+$('hClose').onclick=()=>$('help').classList.remove('show');
+/* ── 左栏折叠（状态记忆） ── */
+const PANEL_KEY='jl_panel_collapsed';
+let panelHidden=false;
+function setPanel(hidden,silent){
+  panelHidden=!!hidden;
+  $('panel').classList.toggle('hide',panelHidden);
+  document.body.classList.toggle('pcol',panelHidden);
+  $('btnMenu').textContent=panelHidden?'☰':'◀';
+  $('panelHandle').textContent=panelHidden?'▶':'◀';
+  const tip=(panelHidden?'展开':'折叠')+'左侧面板（快捷键 [ ）';
+  $('btnMenu').title=tip;$('panelHandle').title=tip;
+  if(!silent){try{localStorage.setItem(PANEL_KEY,panelHidden?'1':'0');}catch(e){}}
+}
+function togglePanel(){setPanel(!panelHidden);}
+$('btnMenu').onclick=togglePanel;
+$('panelHandle').onclick=togglePanel;
+window.addEventListener('keydown',e=>{
+  const t=e.target;
+  if(t&&(t.tagName==='INPUT'||t.tagName==='SELECT'||t.tagName==='TEXTAREA'))return;
+  if(e.key==='['||((e.ctrlKey||e.metaKey)&&String(e.key).toLowerCase()==='b')){e.preventDefault();togglePanel();}
+});
+try{
+  const pSaved=localStorage.getItem(PANEL_KEY);
+  const pNarrow=window.matchMedia('(max-width:760px)').matches;
+  /* 窄屏首次访问默认折叠面板，避免 84vw 覆盖层挡住画布 */
+  setPanel(pSaved===null?pNarrow:pSaved==='1',true);
+}catch(e){}
+
+setTimeout(()=>$('hint').classList.add('fade'),9000);
+
+/* ================= 启动 ================= */
+function resize(){
+  DPR=Math.min(2,window.devicePixelRatio||1);
+  W=innerWidth;H=innerHeight;
+  cv.width=W*DPR;cv.height=H*DPR;
+  cv.style.width=W+'px';cv.style.height=H+'px';}
+window.addEventListener('resize',resize);
+
+resize();
+buildData();
+buildCircle();
+buildUI();
+renderRx();
+flyBox(VBOX,.92);
+cam.x=camT.x;cam.y=camT.y;cam.s=camT.s;
+goView('body');
+requestAnimationFrame(loop);
+llmLoad();updateAiMode();
+if(!localStorage.getItem('jl_seen8')){
+$('help').classList.add('show');localStorage.setItem('jl_seen8','1');}
+</script>
+</body>
+</html>
